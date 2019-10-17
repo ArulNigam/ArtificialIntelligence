@@ -291,7 +291,7 @@ def bi_bfs(start, goal, graph, col):
                 path = pathF
                 cost = costF
             draw_final_path(ROOT, canvas, path, graph)
-            print("The number of explored nodes of BFS:", len(exploredF))
+            print("The number of explored nodes of Bi-BFS:", len(exploredF))
             print("The whole path:", path)
             print("The length of the whole path:", len(path))
             return path, cost
@@ -305,11 +305,35 @@ def bi_bfs(start, goal, graph, col):
    return None
    
 def a_star(start, goal, graph, col, heuristic=dist_heuristic):
-
-   # Your code goes here
-   
+   ROOT = Tk() #creates new tkinter
+   ROOT.title("A*")
+   canvas = Canvas(ROOT, background='black') #sets background
+   draw_all_edges(ROOT, canvas, graph)
+   counter = 0   
+   if start == goal:
+       return [start]
+   frontier, explored, old_explored = PriorityQueue(), {start: "s"}, {start: heuristic(start, goal, graph)}
+   frontier.push((0, start, [start]))
+   while frontier:
+       popped = frontier.pop()
+       current = popped[2] # path
+       if popped[1] == goal: # current value
+          path, cost = generate_path(popped[1], explored, graph, "s")
+          draw_final_path(ROOT, canvas, path, graph)
+          print("The number of explored nodes of A*:", len(old_explored))
+          print("The whole path:", path)
+          print("The length of the whole path:", len(path))
+          return path, cost
+       for neighbor in graph[3][popped[1]]:  # graph[3] is neighbors
+           new_cost = len(current) + 1 + heuristic(neighbor, goal, graph)
+           if neighbor not in old_explored or new_cost < old_explored[neighbor]:
+               explored[neighbor] = popped[1]
+               old_explored[neighbor] = new_cost
+               frontier.push((new_cost, neighbor, current + [neighbor]))
+               drawLine(canvas, *graph[5][popped[1]], *graph[5][neighbor], col)
+       counter += 1
+       if counter % 100 == 0: ROOT.update()      
    return None
-
 
 def bi_a_star(start, goal, graph, col, heuristic=dist_heuristic):
 
@@ -328,29 +352,29 @@ def main():
    start, goal, third  = 'Charlotte', 'Los Angeles', 'Chicago'
    graph = make_graph("rrNodes.txt", "rrNodeCity.txt", "rrEdges.txt")  # Task 1
   
-   cur_time = time.time()
-   path, cost = bfs(graph[2][start], graph[2][goal], graph, 'yellow') #graph[2] is city to node
-   if path != None: display_path(path, graph)
-   else: print ("No Path Found.")
-   print ('BFS Path Cost:', cost)
-   print ('BFS duration:', (time.time() - cur_time))
-   print ()
-
-   cur_time = time.time()
-   path, cost = bi_bfs(graph[2][start], graph[2][goal], graph, 'green')
-   if path != None: display_path(path, graph)
-   else: print ("No Path Found.")
-   print ('Bi-BFS Path Cost:', cost)
-   print ('Bi-BFS duration:', (time.time() - cur_time))
-   print ()
-   
 #   cur_time = time.time()
-#   path, cost = a_star(graph[2][start], graph[2][goal], graph, 'blue')
+#   path, cost = bfs(graph[2][start], graph[2][goal], graph, 'yellow') #graph[2] is city to node
 #   if path != None: display_path(path, graph)
 #   else: print ("No Path Found.")
-#   print ('A star Path Cost:', cost)
-#   print ('A star duration:', (time.time() - cur_time))
+#   print ('BFS Path Cost:', cost)
+#   print ('BFS duration:', (time.time() - cur_time))
 #   print ()
+
+#   cur_time = time.time()
+#   path, cost = bi_bfs(graph[2][start], graph[2][goal], graph, 'green')
+#   if path != None: display_path(path, graph)
+#   else: print ("No Path Found.")
+#   print ('Bi-BFS Path Cost:', cost)
+#   print ('Bi-BFS duration:', (time.time() - cur_time))
+#   print ()
+   
+   cur_time = time.time()
+   path, cost = a_star(graph[2][start], graph[2][goal], graph, 'blue')
+   if path != None: display_path(path, graph)
+   else: print ("No Path Found.")
+   print ('A star Path Cost:', cost)
+   print ('A star duration:', (time.time() - cur_time))
+   print ()
 
 #   cur_time = time.time()
 #   path, cost = bi_a_star(graph[2][start], graph[2][goal], graph, 'orange', ROOT, canvas)
