@@ -53,16 +53,7 @@ def recursive_backtracking(assignment, variables, adjs):
    return None
 
 def main():
-
-#   frame = GraphWin('Map', 300, 200)
- #  frame.setCoords(0, 0, 299, 199) 
-  # shape = Polygon([Point(50, 100), Point(100, 50), Point(150, 100)])
-   #shape.setFill("red") 
-   #shape.setOutline("black") 
-   #shape.draw(frame)
-    
-   #mainloop()
-  
+   
    regions, variables, adjacents  = [], {}, {}
    # Read mcNodes.txt and store all regions in regions list
    fileName = "mcNodes.txt"
@@ -95,6 +86,21 @@ def main():
 
    # solve the map coloring problem by using backtracking_search
    solution = backtracking_search(variables, adjacents)
+   
+   frame = GraphWin('Map', 1000, 1000)
+   frame.setCoords(0, 0, 999, 999) 
+   
+   shapes = {'WA': Polygon([Point(400, 450), Point(400, 800), Point(50, 600)]), 'NT': Polygon([Point(400, 800), Point(600, 750), Point(600, 600), Point(400, 600)]), 'SA': Polygon([Point(400, 600), Point(400, 450), Point(650, 300), Point(650, 600)]), 'Q': Polygon([Point(650, 600), Point(600, 600), Point(600, 750), Point(950, 500), Point(650, 500)]), 'NSW': Polygon([Point(950, 500), Point(650, 500), Point(650, 400), Point(900, 300)]), 'V': Polygon([Point(650, 400), Point(900, 300), Point(650, 300)])}#, 'T': Polygon([Point(750, 250), Point(800, 250), Point(800, 150), Point(750, 150))}
+   colors = {'R': "red", 'G': "green", 'B': "blue"}
+   
+   for region in solution:
+      shape = shapes[region]   
+      shape.setFill(colors[solution[region]]) 
+      shape.setOutline("black") 
+      shape.draw(frame)
+   
+   mainloop()
+   
    print (solution)
 
 if __name__ == '__main__':
