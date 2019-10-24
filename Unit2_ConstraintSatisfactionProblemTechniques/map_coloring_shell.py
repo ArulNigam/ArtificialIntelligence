@@ -1,16 +1,20 @@
 # Name: Arul Nigam
 # Period: 3
 
+from tkinter import * 
+from graphics import *
+
 def check_complete(assignment, vars, adjs):
    # check if assignment is complete or not. Goal_Test 
-   if sorted(assignment.keys()) != sorted(adjs.keys()):
-      return False
+   if assignment != None:
+      if sorted(assignment.keys()) != sorted(adjs.keys()):
+         return False
    for key in vars:
       if key in adjs:
          for adjacent in adjs[key]:
             if adjacent in assignment:
                if assignment[key] == assignment[adjacent]:
-                  return False            
+                  return False  
    return True
 
 def select_unassigned_var(assignment, vars, adjs): 
@@ -18,14 +22,16 @@ def select_unassigned_var(assignment, vars, adjs):
    # returns a variable
    for key in vars:
       if key not in assignment: 
-         return vars[key]
-   
+         return key
+            
 def isValid(value, var, assignment, variables, adjs):
    # value is consistent with assignment
    # check adjacents to check 'var' is working or not.
-   for adjacent in adjs[var]:
-      if value == assignment[adjacent]: # var is region, value is color
-         return False 
+   if var in adjs:
+      for adjacent in adjs[var]:
+         if adjacent in assignment:
+            if value == assignment[adjacent]: # var is region, value is color
+               return False 
    return True
 
 def backtracking_search(variables, adjs): 
@@ -35,17 +41,28 @@ def recursive_backtracking(assignment, variables, adjs):
    if check_complete(assignment, variables, adjs):
       return assignment
    var = select_unassigned_var(assignment, variables, adjs) # var isa region
-   for value in variables[var]:
-      if isValid(value, var, assignment, variables, adjs):
-         assignment[var] = value
-         result = recursive_backtracking(assignment, variables, adjs)
-
-         if not check_complete(result, variables, adjs):
-            return result
-         assignment.pop(var)
+   if var != None:
+      for value in variables[var]: # variables maps region to rgb color
+         if isValid(value, var, assignment, variables, adjs):
+            assignment[var] = value
+            result = recursive_backtracking(assignment, variables, adjs)
+            print("Result=", result)
+            if check_complete(result, variables, adjs):
+               return result
+            assignment.pop(var)
    return None
 
 def main():
+
+#   frame = GraphWin('Map', 300, 200)
+ #  frame.setCoords(0, 0, 299, 199) 
+  # shape = Polygon([Point(50, 100), Point(100, 50), Point(150, 100)])
+   #shape.setFill("red") 
+   #shape.setOutline("black") 
+   #shape.draw(frame)
+    
+   #mainloop()
+  
    regions, variables, adjacents  = [], {}, {}
    # Read mcNodes.txt and store all regions in regions list
    fileName = "mcNodes.txt"
