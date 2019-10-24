@@ -9,12 +9,12 @@ def check_complete(assignment, vars, adjs):
    if assignment != None:
       if sorted(assignment.keys()) != sorted(vars.keys()):
          return False
-   for key in vars:
-      if key in adjs:
-         for adjacent in adjs[key]:
-            if adjacent in assignment:
-               if assignment[key] == assignment[adjacent]:
-                  return False  
+      for key in vars:
+         if key in adjs:
+            for adjacent in adjs[key]:
+               if adjacent in assignment:
+                  if assignment[key] == assignment[adjacent]:
+                     return False  
    return True
 
 def select_unassigned_var(assignment, vars, adjs): 
