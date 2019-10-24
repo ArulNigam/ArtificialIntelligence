@@ -4,10 +4,10 @@
 from tkinter import * 
 from graphics import *
 
-def check_complete(assignment, vars, adjs):
+def check_complete(assignment, vars, adjs):     
    # check if assignment is complete or not. Goal_Test 
    if assignment != None:
-      if sorted(assignment.keys()) != sorted(adjs.keys()):
+      if sorted(assignment.keys()) != sorted(vars.keys()):
          return False
    for key in vars:
       if key in adjs:
@@ -35,9 +35,14 @@ def isValid(value, var, assignment, variables, adjs):
    return True
 
 def backtracking_search(variables, adjs): 
-   return recursive_backtracking({}, variables, adjs)
+   frame = GraphWin('Map', 1000, 1000)
+   frame.setCoords(0, 0, 999, 999) 
+   shapes = {'WA': Polygon([Point(400, 450), Point(400, 800), Point(50, 600)]), 'NT': Polygon([Point(400, 800), Point(600, 750), Point(600, 600), Point(400, 600)]), 'SA': Polygon([Point(400, 600), Point(400, 450), Point(650, 300), Point(650, 600)]), 'Q': Polygon([Point(650, 600), Point(600, 600), Point(600, 750), Point(950, 500), Point(650, 500)]), 'NSW': Polygon([Point(950, 500), Point(650, 500), Point(650, 400), Point(900, 300)]), 'V': Polygon([Point(650, 400), Point(900, 300), Point(650, 300)]), 'T': Polygon([Point(750, 250), Point(800, 250), Point(800, 150), Point(750, 150)])}
+   colors = {'R': "red", 'G': "green", 'B': "blue"}
+   
+   return recursive_backtracking({}, variables, adjs, frame, shapes, colors)
 
-def recursive_backtracking(assignment, variables, adjs):
+def recursive_backtracking(assignment, variables, adjs, frame, shapes, colors):
    if check_complete(assignment, variables, adjs):
       return assignment
    var = select_unassigned_var(assignment, variables, adjs) # var isa region
@@ -45,8 +50,13 @@ def recursive_backtracking(assignment, variables, adjs):
       for value in variables[var]: # variables maps region to rgb color
          if isValid(value, var, assignment, variables, adjs):
             assignment[var] = value
-            result = recursive_backtracking(assignment, variables, adjs)
-            print("Result=", result)
+            shape = shapes[var]   
+            shape.setFill(colors[assignment[var]]) 
+            shape.setOutline("black") 
+            shape.undraw()
+            shape.draw(frame)
+            time.sleep(0.5)
+            result = recursive_backtracking(assignment, variables, adjs, frame, shapes, colors)
             if check_complete(result, variables, adjs):
                return result
             assignment.pop(var)
@@ -85,22 +95,7 @@ def main():
    file.close()
 
    # solve the map coloring problem by using backtracking_search
-   solution = backtracking_search(variables, adjacents)
-   
-   frame = GraphWin('Map', 1000, 1000)
-   frame.setCoords(0, 0, 999, 999) 
-   
-   shapes = {'WA': Polygon([Point(400, 450), Point(400, 800), Point(50, 600)]), 'NT': Polygon([Point(400, 800), Point(600, 750), Point(600, 600), Point(400, 600)]), 'SA': Polygon([Point(400, 600), Point(400, 450), Point(650, 300), Point(650, 600)]), 'Q': Polygon([Point(650, 600), Point(600, 600), Point(600, 750), Point(950, 500), Point(650, 500)]), 'NSW': Polygon([Point(950, 500), Point(650, 500), Point(650, 400), Point(900, 300)]), 'V': Polygon([Point(650, 400), Point(900, 300), Point(650, 300)])}#, 'T': Polygon([Point(750, 250), Point(800, 250), Point(800, 150), Point(750, 150))}
-   colors = {'R': "red", 'G': "green", 'B': "blue"}
-   
-   for region in solution:
-      shape = shapes[region]   
-      shape.setFill(colors[solution[region]]) 
-      shape.setOutline("black") 
-      shape.draw(frame)
-   
-   mainloop()
-   
+   solution = backtracking_search(variables, adjacents) 
    print (solution)
 
 if __name__ == '__main__':
