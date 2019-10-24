@@ -48,14 +48,14 @@ def recursive_backtracking(assignment, variables, adjs, frame, shapes, colors):
    var = select_unassigned_var(assignment, variables, adjs) # var isa region
    if var != None:
       for value in variables[var]: # variables maps region to rgb color
+         assignment[var] = value
+         shape = shapes[var]   
+         shape.setFill(colors[assignment[var]]) 
+         shape.setOutline("black") 
+         shape.undraw()
+         shape.draw(frame)
+         time.sleep(0.5)
          if isValid(value, var, assignment, variables, adjs):
-            assignment[var] = value
-            shape = shapes[var]   
-            shape.setFill(colors[assignment[var]]) 
-            shape.setOutline("black") 
-            shape.undraw()
-            shape.draw(frame)
-            time.sleep(0.5)
             result = recursive_backtracking(assignment, variables, adjs, frame, shapes, colors)
             if check_complete(result, variables, adjs):
                return result
@@ -97,6 +97,7 @@ def main():
    # solve the map coloring problem by using backtracking_search
    solution = backtracking_search(variables, adjacents) 
    print (solution)
+   mainloop()
 
 if __name__ == '__main__':
    main()
