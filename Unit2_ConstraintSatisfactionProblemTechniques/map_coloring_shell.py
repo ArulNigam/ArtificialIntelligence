@@ -35,9 +35,9 @@ def isValid(value, var, assignment, variables, adjs):
    return True
 
 def backtracking_search(variables, adjs): 
-   frame = GraphWin('Map', 1000, 1000)
+   frame = GraphWin('Australia Map Coloring - CSP Techniques Lab 1', 1000, 1000)
    frame.setCoords(0, 0, 999, 999) 
-   shapes = {'WA': Polygon([Point(400, 450), Point(400, 800), Point(50, 600)]), 'NT': Polygon([Point(400, 800), Point(600, 750), Point(600, 600), Point(400, 600)]), 'SA': Polygon([Point(400, 600), Point(400, 450), Point(650, 300), Point(650, 600)]), 'Q': Polygon([Point(650, 600), Point(600, 600), Point(600, 750), Point(950, 500), Point(650, 500)]), 'NSW': Polygon([Point(950, 500), Point(650, 500), Point(650, 400), Point(900, 300)]), 'V': Polygon([Point(650, 400), Point(900, 300), Point(650, 300)]), 'T': Polygon([Point(750, 250), Point(800, 250), Point(800, 150), Point(750, 150)])}
+   shapes = {'WA': Polygon([Point(400, 450), Point(400, 800), Point(50, 600)]), 'NT': Polygon([Point(400, 800), Point(600, 750), Point(600, 600), Point(400, 600)]), 'SA': Polygon([Point(400, 600), Point(400, 450), Point(650, 300), Point(650, 600)]), 'Q': Polygon([Point(650, 600), Point(600, 600), Point(600, 750), Point(950, 500), Point(650, 500)]), 'NSW': Polygon([Point(950, 500), Point(650, 500), Point(650, 400), Point(900, 300)]), 'V': Polygon([Point(650, 400), Point(900, 300), Point(650, 300)]), 'T': Polygon([Point(750, 250), Point(800, 250), Point(800, 200), Point(750, 200)])}
    colors = {'R': "red", 'G': "green", 'B': "blue"}
    
    return recursive_backtracking({}, variables, adjs, frame, shapes, colors)
