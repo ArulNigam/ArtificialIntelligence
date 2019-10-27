@@ -33,23 +33,18 @@ def forward_checking(assignment, vars):
 def minimum_remaining_values(assignment, vars, adjs): 
    min_val_pair = [4, None] # [Number of Remaining Possible Values, Region with Minimum Remianing Possible Values]...start with 4 because maximum possible # of colors is 3
    for key in vars: # for each region that exists
-      print("Key A", key)
       if key not in assignment: # if region is not already assigned, b/c otherwise would be pointless
-         rem_val_count = 0 # Temporary Counter
+         rem_val_count = set() # Temporary Counter
          if key in adjs: # if region has neighbors
-            print("Key B", key)
             for adj_key in adjs[key]: # for each neighboring region
                if adj_key in assignment: # count it if it has have been assigned (additional constrraint, b/c can't be color x)
-                  print("Key C", adj_key)
-                  rem_val_count += 1
+                  rem_val_count.add(assignment[adj_key])
          else: # is an island
-            rem_val_count = 3 # 3 possible colors b/c no constraints
-         if rem_val_count < min_val_pair[0]: # if this region has fewer constraints than what we think the min_val_pair is 
-            min_val_pair = [rem_val_count, key] # update the min_val_pair
-   #print("Variables: ", vars)
-   #print("Assignment: ", assignment)
-   #print("Pair", min_val_pair)
-   print()
+            rem_val_count.add("temp1") # 3 possible colors b/c no constraints
+            rem_val_count.add("temp2") # 3 possible colors b/c no constraints
+            rem_val_count.add("temp3") # 3 possible colors b/c no constraints
+         if len(rem_val_count) < min_val_pair[0]: # if this region has fewer constraints than what we think the min_val_pair is 
+            min_val_pair = [len(rem_val_count), key] # update the min_val_pair
    return min_val_pair[1]
          
 def least_constraining_values(assignment, vars, adjs): 
