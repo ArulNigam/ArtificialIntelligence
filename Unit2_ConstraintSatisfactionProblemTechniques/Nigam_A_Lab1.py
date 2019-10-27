@@ -17,9 +17,42 @@ def check_complete(assignment, vars, adjs):
                      return False  
    return True
 
-def select_unassigned_var(assignment, vars, adjs): 
-   # Select an unassigned variable - forward checking, MRV, or LCV
-   # returns a variable
+def select_unassigned_var(assignment, vars, adjs): # Select an unassigned variable - forward checking, MRV, or LCV
+   # Forward Checking:
+   #return forward_checking(assignment, vars)
+   # MRV:
+   return minimum_remaining_values(assignment, vars, adjs)
+   #LCV:
+   #return least_constraining_values(assignment, vars, adjs)
+         
+def forward_checking(assignment, vars): 
+   for key in vars:
+      if key not in assignment: 
+         return key
+         
+def minimum_remaining_values(assignment, vars, adjs): 
+   min_val_pair = [4, None] # [Number of Remaining Possible Values, Region with Minimum Remianing Possible Values]...start with 4 because maximum possible # of colors is 3
+   for key in vars: # for each region that exists
+      print("Key A", key)
+      if key not in assignment: # if region is not already assigned, b/c otherwise would be pointless
+         rem_val_count = 0 # Temporary Counter
+         if key in adjs: # if region has neighbors
+            print("Key B", key)
+            for adj_key in adjs[key]: # for each neighboring region
+               if adj_key in assignment: # count it if it has have been assigned (additional constrraint, b/c can't be color x)
+                  print("Key C", adj_key)
+                  rem_val_count += 1
+         else: # is an island
+            rem_val_count = 3 # 3 possible colors b/c no constraints
+         if rem_val_count < min_val_pair[0]: # if this region has fewer constraints than what we think the min_val_pair is 
+            min_val_pair = [rem_val_count, key] # update the min_val_pair
+   #print("Variables: ", vars)
+   #print("Assignment: ", assignment)
+   #print("Pair", min_val_pair)
+   print()
+   return min_val_pair[1]
+         
+def least_constraining_values(assignment, vars, adjs): 
    for key in vars:
       if key not in assignment: 
          return key
@@ -39,7 +72,6 @@ def backtracking_search(variables, adjs):
    frame.setCoords(0, 0, 999, 999) 
    shapes = {'WA': Polygon([Point(400, 450), Point(400, 800), Point(50, 600)]), 'NT': Polygon([Point(400, 800), Point(600, 750), Point(600, 600), Point(400, 600)]), 'SA': Polygon([Point(400, 600), Point(400, 450), Point(650, 300), Point(650, 600)]), 'Q': Polygon([Point(650, 600), Point(600, 600), Point(600, 750), Point(950, 500), Point(650, 500)]), 'NSW': Polygon([Point(950, 500), Point(650, 500), Point(650, 400), Point(900, 300)]), 'V': Polygon([Point(650, 400), Point(900, 300), Point(650, 300)]), 'T': Polygon([Point(750, 250), Point(800, 250), Point(800, 200), Point(750, 200)])}
    colors = {'R': "red", 'G': "green", 'B': "blue"}
-   
    return recursive_backtracking({}, variables, adjs, frame, shapes, colors)
 
 def recursive_backtracking(assignment, variables, adjs, frame, shapes, colors):
