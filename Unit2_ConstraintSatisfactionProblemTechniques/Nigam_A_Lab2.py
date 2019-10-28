@@ -21,17 +21,11 @@ def select_unassigned_var(assignment, tri_to_hex_dict, possible_ints, hex_to_tri
          return key
             
 def isValid(value, triangle, assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict):
-   print("trngle", triangle)
    for hex in tri_to_hex_dict[triangle]: 
-#      print("val", value, "hex", hex)
       for tri in hex_to_tri_dict[hex]:
-         print("tri", tri)
          if assignment[tri] != ".":
             if int(assignment[tri]) == value and tri != triangle: # neighbors are the same:
-               print("x", assignment[tri])
-               print("FALSE")
                return False # invalid 
-   print("TRUE")
    return True
 
 def backtracking_search(assignment, triangle_to_hexagons_dict, possible_ints, hexagon_to_triangles_dict):    
@@ -39,11 +33,14 @@ def backtracking_search(assignment, triangle_to_hexagons_dict, possible_ints, he
 
 def recursive_backtracking(assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict):
    if check_complete(assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict):
-      return assignment
+      s = ""
+      for i in assignment:
+         s += str(i)
+      return s
    triangle = select_unassigned_var(assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict) 
    if triangle != None:
       for value in possible_ints[triangle]: # possible_ints maps traingle to [1 - 6]
-         assignment[triangle] = value
+         assignment[triangle] = int(value)
          if isValid(value, triangle, assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict):
             result = recursive_backtracking(assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict)
             if check_complete(result, tri_to_hex_dict, possible_ints, hex_to_tri_dict):
@@ -93,6 +90,7 @@ def main():
    
    # solve the map coloring problem by using backtracking_search
    solution = backtracking_search(list(sys.argv[1]), triangle_to_hexagons_dict, possible_ints, hexagon_to_triangles_dict) 
+   print(" ", solution[0:5], "\n", solution[5:12], "\n", solution[12:19], "\n", "", solution[19:24], "\n")
    print (solution)
 
 if __name__ == '__main__':
