@@ -6,7 +6,6 @@ from graphics import *
 
 def check_complete(assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict):     
    # Goal Test: are there any unassigned (".") 
-   print("vwhgkfugljwlwe", assignment)
    if assignment == []:
       return False      
    for triangle_value in assignment:
@@ -17,16 +16,22 @@ def check_complete(assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict):
 def select_unassigned_var(assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict): 
    # Select an unassigned variable - forward checking, MRV, or LCV
    # returns a variable
-   print("assignment", assignment)
    for key in range(24):
       if assignment[key] == ".": 
          return key
             
-def isValid(value, triangle, assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict): 
-   for hex in tri_to_hex_dict[triangle]:
+def isValid(value, triangle, assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict):
+   print("trngle", triangle)
+   for hex in tri_to_hex_dict[triangle]: 
+#      print("val", value, "hex", hex)
       for tri in hex_to_tri_dict[hex]:
-         if int(list(assignment)[tri]) == value: # neighbors are the same:
-            return False # invalid 
+         print("tri", tri)
+         if assignment[tri] != ".":
+            if int(assignment[tri]) == value and tri != triangle: # neighbors are the same:
+               print("x", assignment[tri])
+               print("FALSE")
+               return False # invalid 
+   print("TRUE")
    return True
 
 def backtracking_search(assignment, triangle_to_hexagons_dict, possible_ints, hexagon_to_triangles_dict):    
@@ -34,7 +39,6 @@ def backtracking_search(assignment, triangle_to_hexagons_dict, possible_ints, he
 
 def recursive_backtracking(assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict):
    if check_complete(assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict):
-      print("assignment", assignment)
       return assignment
    triangle = select_unassigned_var(assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict) 
    if triangle != None:
