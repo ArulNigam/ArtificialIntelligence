@@ -21,9 +21,9 @@ def select_unassigned_var(assignment, vars, adjs): # Select an unassigned variab
    # Forward Checking:
    #return forward_checking(assignment, vars)
    # MRV:
-   return minimum_remaining_values(assignment, vars, adjs)
+   #return minimum_remaining_values(assignment, vars, adjs)
    #LCV:
-   #return least_constraining_values(assignment, vars, adjs)
+   return least_constraining_value(assignment, vars, adjs)
          
 def forward_checking(assignment, vars): 
    for key in vars:
@@ -47,10 +47,21 @@ def minimum_remaining_values(assignment, vars, adjs):
             min_val_pair = [len(rem_val_count), key] # update the min_val_pair
    return min_val_pair[1]
          
-def least_constraining_values(assignment, vars, adjs): 
-   for key in vars:
-      if key not in assignment: 
-         return key
+def least_constraining_value(assignment, vars, adjs): 
+#     constraints as a collection of value constraints
+#     values as a collection of possible values to be selected
+#     for each val in values:
+#         count as a count of all possible values for var
+# 
+#         for each constraint on var:
+#             if the constraint is binary:
+#                 neighbor = GET-NEIGHBOR(constraint, var)
+#                 count += COUNT-VALID-VALUES(neighbor)
+#         constraints.add([value, count])
+#         var.value = NULL
+# 
+#     constraints = SORT-INCREASING(constraints, count)
+#     return INTERSECTION(constraints, values)
             
 def isValid(value, var, assignment, variables, adjs):
    # value is consistent with assignment
