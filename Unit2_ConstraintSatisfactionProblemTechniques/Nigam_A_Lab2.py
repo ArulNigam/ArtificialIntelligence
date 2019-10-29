@@ -6,7 +6,7 @@ from graphics import *
 
 def check_complete(assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict):     
    # Goal Test: are there any unassigned (".") 
-   if assignment == []:
+   if assignment == None or assignment == []:
       return False      
    for triangle_value in assignment:
       if triangle_value == ".":
@@ -45,7 +45,7 @@ def recursive_backtracking(assignment, tri_to_hex_dict, possible_ints, hex_to_tr
             result = recursive_backtracking(assignment, tri_to_hex_dict, possible_ints, hex_to_tri_dict)
             if check_complete(result, tri_to_hex_dict, possible_ints, hex_to_tri_dict):
                return result
-            assignment.pop(var)
+            assignment.pop(triangle)
    return None
 
 def main():
