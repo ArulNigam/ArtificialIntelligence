@@ -46,6 +46,7 @@ def recursive_backtracking(assignment, tri_to_hex_dict, possible_ints, hex_to_tr
             if check_complete(result, tri_to_hex_dict, possible_ints, hex_to_tri_dict):
                return result
             assignment.pop(triangle)
+            assignment.append(".")
    return None
 
 def main():
