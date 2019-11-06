@@ -19,11 +19,9 @@ def check_complete(assignment, vars, adjs):
 
 def select_unassigned_var(assignment, vars, adjs): # Select an unassigned variable - forward checking, MRV, or LCV
    # Forward Checking:
-   #return forward_checking(assignment, vars)
+   return forward_checking(assignment, vars)
    # MRV:
    #return minimum_remaining_values(assignment, vars, adjs)
-   #LCV:
-   return least_constraining_value(assignment, vars, adjs)
          
 def forward_checking(assignment, vars): 
    for key in vars:
@@ -46,23 +44,7 @@ def minimum_remaining_values(assignment, vars, adjs):
          if len(rem_val_count) < min_val_pair[0]: # if this region has fewer constraints than what we think the min_val_pair is 
             min_val_pair = [len(rem_val_count), key] # update the min_val_pair
    return min_val_pair[1]
-         
-def least_constraining_value(assignment, vars, adjs): 
-#     constraints as a collection of value constraints
-#     values as a collection of possible values to be selected
-#     for each val in values:
-#         count as a count of all possible values for var
-# 
-#         for each constraint on var:
-#             if the constraint is binary:
-#                 neighbor = GET-NEIGHBOR(constraint, var)
-#                 count += COUNT-VALID-VALUES(neighbor)
-#         constraints.add([value, count])
-#         var.value = NULL
-# 
-#     constraints = SORT-INCREASING(constraints, count)
-#     return INTERSECTION(constraints, values)
-            
+                     
 def isValid(value, var, assignment, variables, adjs):
    # value is consistent with assignment
    # check adjacents to check 'var' is working or not.
@@ -91,8 +73,9 @@ def recursive_backtracking(assignment, variables, adjs, frame, shapes, colors):
          shape.setFill(colors[assignment[var]]) 
          shape.setOutline("black") 
          shape.undraw()
+         time.sleep(0.25)
          shape.draw(frame)
-         time.sleep(0.5)
+         time.sleep(0.25)
          if isValid(value, var, assignment, variables, adjs):
             result = recursive_backtracking(assignment, variables, adjs, frame, shapes, colors)
             if check_complete(result, variables, adjs):
