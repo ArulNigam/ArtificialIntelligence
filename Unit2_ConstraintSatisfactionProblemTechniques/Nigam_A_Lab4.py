@@ -8,7 +8,6 @@ import math, time, copy
 def display(solution, length):
     subblockheight = int(math.sqrt(length))
     subblockwidth = int(length / subblockheight)
-    print("---------------------------------------")
     for i in range(0, length * length, subblockwidth):
         if ((i % (length * subblockheight)) == 0):
             print("")
@@ -91,6 +90,7 @@ def backtracking_search(initial, cell_to_groups_dict, possible_ints, length):
 
 def recursive_backtracking(assignment, cell_to_groups_dict, possible_ints, length):
     newassignment = copy.deepcopy(assignment)
+    #print("-->",assignment)
     size = length * length
 
     if length == 9:
@@ -100,18 +100,16 @@ def recursive_backtracking(assignment, cell_to_groups_dict, possible_ints, lengt
     else:
         near = near16
 
-
     # Setup possible values for each position
     for i in range(size):
         if newassignment[i] == ".":
-            possible_ints[i] = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+            possible_ints[i] = sudokunumbers[0:length]
             for neighbor in near[i]:
                 if newassignment[neighbor] != ".":
-                    if int(newassignment[neighbor]) in possible_ints[i]:
-                        possible_ints[i].remove(int(newassignment[neighbor]))
+                    if str(newassignment[neighbor]) in str(possible_ints[i]):
+                        possible_ints[i].remove(newassignment[neighbor])
 
     # Assign the easy ones
-
     change = TRUE
     while change:
         change = FALSE
@@ -132,12 +130,12 @@ def recursive_backtracking(assignment, cell_to_groups_dict, possible_ints, lengt
             rowints = []
             for j in range(i, i + length):
                 rowints = rowints + possible_ints[j]
-            for j in range(1, length + 1):
-                if rowints.count(j) == 1:
+            for j in range(length):
+                if rowints.count(sudokunumbers[j]) == 1:
                     for cell in range(i, i + length):
                         if newassignment[cell] == ".":
-                            if j in possible_ints[cell]:
-                                newassignment[cell] = str(j)
+                            if sudokunumbers[j] in possible_ints[cell]:
+                                newassignment[cell] = str(sudokunumbers[j])
                                 change = TRUE
 
     # Assign unique ones in column
@@ -148,25 +146,22 @@ def recursive_backtracking(assignment, cell_to_groups_dict, possible_ints, lengt
             colints = []
             for j in range(i, size, length):
                 colints = colints + possible_ints[j]
-            for j in range(1, length + 1):
-                if colints.count(j) == 1:
+            for j in range(length):
+                if colints.count(sudokunumbers[j]) == 1:
                     for cell in range(i, size, length):
                         if newassignment[cell] == ".":
-                            if j in possible_ints[cell]:
-                                newassignment[cell] = str(j)
+                            if sudokunumbers[j] in possible_ints[cell]:
+                                newassignment[cell] = str(sudokunumbers[j])
                                 change = TRUE
 
     # Check for completion
     if check_complete(newassignment):
-        s = ""
-        for i in newassignment:
-            s += str(i)
-        return s
+        return "".join(newassignment)
 
     # Do the harder ones with backtracking
     cell = select_unassigned_var(newassignment, length, possible_ints)
     values = copy.deepcopy(possible_ints[cell])
-    for value in values:  # possible_ints maps cell to [0 - 9]
+    for value in values:
         newassignment[cell] = str(value)
         if isValid(value, cell, newassignment, cell_to_groups_dict, possible_ints):
             result = recursive_backtracking(newassignment, cell_to_groups_dict, possible_ints, length)
@@ -194,21 +189,19 @@ near9 = [[] for i in range(81)]
 near12 = [[] for i in range(144)]
 near16 = [[] for i in range(256)]
 
+sudokunumbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F']
+
 
 def main():
-    cell_to_groups_dict_nine = {}
-    cell_to_groups_dict_twelve = {}
-    cell_to_groups_dict_sixteen = {}
-
-    possible_ints_nine = [[] for i in range(81)]
-    possible_ints_twelve = [[] for i in range(144)]
-    possible_ints_sixteen = [[] for i in range(256)]
+    cell_to_groups_dict = {}
+    possible_ints9 = [[] for i in range(81)]
+    possible_ints12 = [[] for i in range(144)]
+    possible_ints16 = [[] for i in range(256)]
 
     for cell in range(81):
         row = int(cell / 9)
         col = cell % 9
-        cell_to_groups_dict_nine[cell] = [row, col]
-        possible_ints_nine[cell] = [1, 2, 3, 4, 5, 6, 7, 8, 9]  # 1 - 9
+
         for j in range(81):
             if j != cell:
                 if same_square_len(cell, j, 9):
@@ -224,8 +217,6 @@ def main():
     for cell in range(144):
         row = int(cell / 12)
         col = cell % 12
-        cell_to_groups_dict_twelve[cell] = [row, col]
-        possible_ints_twelve[cell] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C']  # 1 - 12
         for j in range(144):
             if same_square_len(cell, j, 12):
                 sameblock12[cell].append(j)
@@ -234,12 +225,12 @@ def main():
                 near12[cell].append(j)
             elif col == (j % 12):
                 near12[cell].append(j)
+        while cell in near12[cell]:
+            near12[cell].remove(cell)
 
     for cell in range(256):
         row = int(cell / 16)
         col = cell % 16
-        cell_to_groups_dict_sixteen[cell] = [row, col]
-        possible_ints_sixteen[cell] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C', 'D', 'E', 'F']  # 1 - 16
         for j in range(256):
             if same_square_len(cell, j, 16):
                 sameblock16[cell].append(j)
@@ -248,6 +239,8 @@ def main():
                 near16[cell].append(j)
             elif col == (j % 16):
                 near16[cell].append(j)
+        while cell in near16[cell]:
+            near16[cell].remove(cell)
 
     fileName = "puzzles.txt"
     if len(sys.argv) > 1:
@@ -262,20 +255,21 @@ def main():
         puzzle = ''.join([str(i) for i in puzzle])
         puzzle = puzzle.strip()
         length = int(math.sqrt(len(puzzle)))
-        print("Line", line, ": ", puzzle)
         if length == 9:
-            cell_to_groups_dict = cell_to_groups_dict_nine
-            possible_ints = possible_ints_nine
+            near = near9
+            possible_ints = possible_ints9
         elif length == 12:
-            cell_to_groups_dict = cell_to_groups_dict_twelve
-            possible_ints = possible_ints_twelve
-        elif length == 16:
-            cell_to_groups_dict = cell_to_groups_dict_sixteen
-            possible_ints = possible_ints_sixteen
+            near = near12
+            possible_ints = possible_ints12
+        else:
+            near = near16
+            possible_ints = possible_ints16
+
+        print("Line", line, ": ", puzzle)
+
         solution = backtracking_search(puzzle, cell_to_groups_dict, possible_ints, length)
-        if solution != None:
-            solution = ''.join([str(i) for i in solution])
-            print(checksum(solution), "-", solution)
+        solution = ''.join([str(i) for i in solution])
+        print(checksum(solution), "-", solution)
         line += 1
         print("")
     print("Duration: ", time.time() - initial_time)
