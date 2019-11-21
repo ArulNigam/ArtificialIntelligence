@@ -2,8 +2,19 @@
 # Period: 3
 
 from tkinter import *
-from graphics import *
-import math, time
+import math, time, copy
+
+
+def display(solution, length):
+    subblockheight = int(math.sqrt(length))
+    subblockwidth = int(length / subblockheight)
+    print("---------------------------------------")
+    for i in range(0, length * length, subblockwidth):
+        if ((i % (length * subblockheight)) == 0):
+            print("")
+        print(str(solution[i:i + subblockwidth]), " ", end="")
+        if (((i + subblockwidth) % length) == 0):
+            print("")
 
 
 def same_square_len(i, j, len):
@@ -32,21 +43,28 @@ def same_square_len2(i, j, len):
 
 def check_complete(assignment):
     # Goal Test: are there any unassigned (".")
-    if assignment is None or assignment == []:
+    if assignment is None:
         return False
-    for cell_value in assignment:
-        if cell_value == ".":
-            return False
-    return True
+    return "." not in assignment
 
 
-def select_unassigned_var(assignment, length):
+def select_unassigned_var(assignment, length, possible_ints):
     # Select an unassigned variable - forward checking, MRV, or LCV
     # returns a variable
     size = length * length
+    minints = length
+    minkey = 0
+
     for key in range(size):
         if assignment[key] == ".":
-            return key
+            numberofints = len(possible_ints[key])
+            if numberofints == 0 or numberofints == 2:
+                return key
+            elif (numberofints < minints):
+                minints = numberofints
+                minkey = key
+
+    return minkey
 
 
 def isValid(value, cell, assignment, cell_to_groups_dict, possible_ints):
@@ -72,19 +90,90 @@ def backtracking_search(initial, cell_to_groups_dict, possible_ints, length):
 
 
 def recursive_backtracking(assignment, cell_to_groups_dict, possible_ints, length):
-    if check_complete(assignment):
+    newassignment = copy.deepcopy(assignment)
+    size = length * length
+
+    if length == 9:
+        near = near9
+    elif length == 12:
+        near = near12
+    else:
+        near = near16
+
+
+    # Setup possible values for each position
+    for i in range(size):
+        if newassignment[i] == ".":
+            possible_ints[i] = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+            for neighbor in near[i]:
+                if newassignment[neighbor] != ".":
+                    if int(newassignment[neighbor]) in possible_ints[i]:
+                        possible_ints[i].remove(int(newassignment[neighbor]))
+
+    # Assign the easy ones
+
+    change = TRUE
+    while change:
+        change = FALSE
+        for i in range(size):
+            if newassignment[i] == ".":
+                if len(possible_ints[i]) == 1:
+                    newassignment[i] = str(possible_ints[i][0])
+                    change = TRUE
+                    for neighbor in near[i]:
+                        if possible_ints[i][0] in possible_ints[neighbor]:
+                            possible_ints[neighbor].remove(possible_ints[i][0])
+
+    # Assign unique ones in row
+    change = TRUE
+    while change:
+        change = FALSE
+        for i in range(0, size, length):
+            rowints = []
+            for j in range(i, i + length):
+                rowints = rowints + possible_ints[j]
+            for j in range(1, length + 1):
+                if rowints.count(j) == 1:
+                    for cell in range(i, i + length):
+                        if newassignment[cell] == ".":
+                            if j in possible_ints[cell]:
+                                newassignment[cell] = str(j)
+                                change = TRUE
+
+    # Assign unique ones in column
+    change = TRUE
+    while change:
+        change = FALSE
+        for i in range(0, length):
+            colints = []
+            for j in range(i, size, length):
+                colints = colints + possible_ints[j]
+            for j in range(1, length + 1):
+                if colints.count(j) == 1:
+                    for cell in range(i, size, length):
+                        if newassignment[cell] == ".":
+                            if j in possible_ints[cell]:
+                                newassignment[cell] = str(j)
+                                change = TRUE
+
+    # Check for completion
+    if check_complete(newassignment):
         s = ""
-        for i in assignment:
+        for i in newassignment:
             s += str(i)
         return s
-    cell = select_unassigned_var(assignment, length)
-    for value in possible_ints[cell]:  # possible_ints maps cell to [0 - 9]
-        assignment[cell] = str(value)
-        if isValid(value, cell, assignment, cell_to_groups_dict, possible_ints):
-            result = recursive_backtracking(assignment, cell_to_groups_dict, possible_ints, length)
+
+    # Do the harder ones with backtracking
+    cell = select_unassigned_var(newassignment, length, possible_ints)
+    values = copy.deepcopy(possible_ints[cell])
+    for value in values:  # possible_ints maps cell to [0 - 9]
+        newassignment[cell] = str(value)
+        if isValid(value, cell, newassignment, cell_to_groups_dict, possible_ints):
+            result = recursive_backtracking(newassignment, cell_to_groups_dict, possible_ints, length)
             if check_complete(result):
                 return result
-        assignment[cell] = "."
+        newassignment[cell] = "."
+
     return None
 
 
@@ -121,13 +210,16 @@ def main():
         cell_to_groups_dict_nine[cell] = [row, col]
         possible_ints_nine[cell] = [1, 2, 3, 4, 5, 6, 7, 8, 9]  # 1 - 9
         for j in range(81):
-            if same_square_len(cell, j, 9):
-                sameblock9[cell].append(j)
-                near9[cell].append(j)
-            elif row == int(j / 9):
-                near9[cell].append(j)
-            elif col == (j % 9):
-                near9[cell].append(j)
+            if j != cell:
+                if same_square_len(cell, j, 9):
+                    sameblock9[cell].append(j)
+                    near9[cell].append(j)
+                elif row == int(j / 9):
+                    near9[cell].append(j)
+                elif col == (j % 9):
+                    near9[cell].append(j)
+        while cell in near9[cell]:
+            near9[cell].remove(cell)
 
     for cell in range(144):
         row = int(cell / 12)
@@ -181,8 +273,9 @@ def main():
             cell_to_groups_dict = cell_to_groups_dict_sixteen
             possible_ints = possible_ints_sixteen
         solution = backtracking_search(puzzle, cell_to_groups_dict, possible_ints, length)
-        solution = ''.join([str(i) for i in solution])
-        print(checksum(solution), "-", solution)
+        if solution != None:
+            solution = ''.join([str(i) for i in solution])
+            print(checksum(solution), "-", solution)
         line += 1
         print("")
     print("Duration: ", time.time() - initial_time)
