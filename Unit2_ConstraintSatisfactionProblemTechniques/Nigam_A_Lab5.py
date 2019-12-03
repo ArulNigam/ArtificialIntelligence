@@ -1,3 +1,20 @@
+Due Nov 24
+Lab5 N-Queens
+27/30
+27 points out of possible 30
+Nicole Kim Nov 18 (Edited Nov 25)
+File Name: LastName_FirstInitial_Lab5.py
+AI U2 Day 6 Student Note.pdf
+PDF
+Class comments
+Your work
+Graded
+Nigam_A_Lab5.py
+Text
+Private comments
+Nicole KimNov 26
+size 64 --> 19 sec
+
 # Name: Arul Nigam
 # Period: 3
 
