@@ -44,7 +44,6 @@ possible_moves = {i for i in range(x_max * y_max)}
 first_turn = 0
 # commands
 
-
 def whose_turn(my_board, prev_turn):
     global possible_moves, first_turn
     cur_turn = opposite_color[prev_turn]
@@ -53,7 +52,6 @@ def whose_turn(my_board, prev_turn):
     if len(possible_moves) > 0:
         return cur_turn
     return None
-
 
 def find_moves(my_board, my_color):
     global first_turn
@@ -76,7 +74,6 @@ def find_moves(my_board, my_color):
                         y_pos += incr[1]
     return moves_found
 
-
 def print_board(my_board):
     # return  # comment to print board each time
     print("\t", end="")
@@ -90,7 +87,6 @@ def print_board(my_board):
         print()
     print()
 
-
 def draw_rect(x_pos, y_pos, possible=False, wall = False):
     coord = [x_pos*(padding+tile_size)+padding+1, y_pos*(padding+tile_size)+padding+1,
              (x_pos+1)*(padding+tile_size), (y_pos+1)*(padding+tile_size)]
@@ -101,12 +97,10 @@ def draw_rect(x_pos, y_pos, possible=False, wall = False):
     else:
         canvas.create_rectangle(coord, fill=green)
 
-
 def draw_circle(x_pos, y_pos, fill_color):
     coord = [x_pos*(padding+tile_size)+2*padding+1, y_pos*(padding+tile_size)+2*padding+1,
              (x_pos+1)*(padding+tile_size)-padding, (y_pos+1)*(padding+tile_size)-padding]
     canvas.create_oval(coord, fill=fill_color)
-
 
 def make_move(x, y):
     if x*y_max+y not in possible_moves:
@@ -114,14 +108,12 @@ def make_move(x, y):
     next_turn(x, y)
     return True
 
-
 def click(event=None):
     x = int((event.x-padding)/(padding+tile_size))
     y = int((event.y-padding)/(padding+tile_size))
     if x*y_max+y not in possible_moves:
         return
     next_turn(x, y)
-
 
 def next_turn(x_pos, y_pos):
     global turn, possible_moves
@@ -149,7 +141,6 @@ def next_turn(x_pos, y_pos):
     if turn is None:
         print_board(board)
         print ("{} win".format(winner_candidate))
-        
         return
     for pos in possible_moves:
         draw_rect(int(pos/y_max), pos % y_max, True)
@@ -164,7 +155,6 @@ def next_turn(x_pos, y_pos):
 #         player_max_times[turn] = max(player_max_times[turn], time_used)
 #         player_total_times[turn] = player_total_times[turn]+time_used
         next_turn(move[0], move[1])
-
 
 def init(choice_menu, e1, e2, v1, v2):
     global turn_off_printing, turn, root, canvas, p1_name, p2_name, players, player_types
@@ -209,7 +199,6 @@ def init(choice_menu, e1, e2, v1, v2):
         next_turn(move[0], move[1])
     root.mainloop()
 
-
 def menu():
     global p1_name, p2_name, radio_on, radio_off
     choice_menu = tk.Tk()
@@ -235,6 +224,5 @@ def menu():
     e2.grid(row=99, column=1, sticky=tk.W + tk.E + tk.N + tk.S)
     tk.Button(text="Begin", font=("Arial", 15), bg=white, fg=black, command=lambda: init(choice_menu, e1, e2, v1, v2)).grid(row=100, column=0, columnspan=2, sticky=tk.W+tk.E+tk.N+tk.S)
     choice_menu.mainloop()
-
 
 menu()
