@@ -1,7 +1,7 @@
 # Name: Arul Nigam
 # Date: 12/10/2019
 
-import random
+import random, time
 
 class RandomPlayer:
    def __init__(self):
@@ -53,8 +53,8 @@ class RandomPlayer:
 class CustomPlayer:
 
    def __init__(self):
-      self.white = "O"
-      self.black = "X"
+      self.white = "#ffffff"
+      self.black = "#000000"
       self.directions = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
       self.opposite_color = {self.black: self.white, self.white: self.black}
       self.x_max = None
@@ -62,20 +62,21 @@ class CustomPlayer:
       self.first_turn = True
 
    def best_strategy(self, board, color):
+      search_depth = 3
       # returns best move
       if self.first_turn:
          self.x_max, self.y_max = len(board), len(board[0])
       possible_moves = self.find_moves(board, color)
       if not possible_moves:
-         return (-1, -1), 0
-      best_move = random.choice(list(possible_moves))
-      return best_move, 0
+         return (-1, -1)
+      best_move = self.minimax(board, color, search_depth)
+      return best_move
 
    def minimax(self, board, color, search_depth):
       if color == self.black:
-         v, s = max_value(self, board, color, search_depth)
+         v, s = self.max_value(board, color, search_depth)
       else:
-         v, s = min_value(self, board, color, search_depth)
+         v, s = self.min_value(board, color, search_depth)
       return s
 
    def negamax(self, board, color, search_depth):
@@ -90,13 +91,14 @@ class CustomPlayer:
       # returns board that has been updated
       return board
 
-   def evaluate(self, board, color, possible_moves):
+   def evaluate(self, board, color):
       # returns the utility value
+      possible_moves = self.find_moves(board, color)
       if possible_moves == None:
          if color == self.white: #"O" can't move, "X" wins
-            return 1
-         return -1
-      return 0
+            return 1, (-1,-1)
+         return -1, (-1,-1)
+      return 0, possible_moves.pop()
 
    def find_moves(self, board, color):
       # finds all possible moves
@@ -106,7 +108,7 @@ class CustomPlayer:
          for j in range(len(board[i])):
             if self.first_turn and board[i][j] == ".":
                moves_found.add((i, j))
-            elif (color == self.black and board[i][j] == 'X') or (color == self.white and board[i][j] == 'O'):
+            elif (color == self.black and board[i][j] == 'O') or (color == self.white and board[i][j] == 'X'):
                for incr in self.directions:
                   x_pos = i + incr[0]
                   y_pos = j + incr[1]
@@ -122,23 +124,26 @@ class CustomPlayer:
       return moves_found
 
    def terminal_test(self, board, color, search_depth):
+      if search_depth == 0:
+         return True
       full = True
       for i in board:
-         empty_spot = board[i].find('.')
-         if empty_spot >= 0:
+         if '.' in i:
             full = False
       if full:
          return True
-      if find_moves(self, board, color) == None:
+      if self.find_moves(board, color) == None:
          return True
       return False
 
    def max_value(self, board, color, search_depth):
-      if terminal_test(self, board, color, search_depth):
-         return evaluate(self, board, color, possible_moves)
+      if self.terminal_test(board, color, search_depth):
+         res = self.evaluate(board, color)
+         return res
       v = -9999
-      for s in find_moves(self, board, color):
-         newv = min_value(self, board, self.opposite_color, search_depth)
+      res = (-1, -1)
+      for s in self.find_moves(board, color):
+         newv = self.min_value(board, self.opposite_color[color], search_depth-1)
          if not (isinstance(newv, int)):
             newv = newv[0]
          if v < newv:
@@ -147,14 +152,16 @@ class CustomPlayer:
       return v, res
 
    def min_value(self, board, color, search_depth):
-      if terminal_test(self, board, color, search_depth):
-         return evaluate(self, board, color, possible_moves)
+      if self.terminal_test(board, color, search_depth):
+         res = self.evaluate(board, color)
+         return res
       v = 9999
-      for s in find_moves(self, board, color):
-         newv = max_value(self, board, self.opposite_color, search_depth)
+      res = (-1, -1)
+      for s in self.find_moves(board, color):
+         newv = self.max_value(board, self.opposite_color[color], search_depth-1)
          if not (isinstance(newv, int)):
             newv = newv[0]
-         if v < newv:
+         if v > newv:
             v = newv
             res = s
       return v, res
