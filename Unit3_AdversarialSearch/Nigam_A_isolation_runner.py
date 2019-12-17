@@ -151,6 +151,7 @@ def next_turn(x_pos, y_pos):
 #         time.sleep(delay_time)
 #         start = time.time()
         move = players[turn].best_strategy(board, turn)
+
 #         time_used = round(time.time()-start, 3)
 #         player_max_times[turn] = max(player_max_times[turn], time_used)
 #         player_total_times[turn] = player_total_times[turn]+time_used
