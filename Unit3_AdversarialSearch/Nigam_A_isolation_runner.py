@@ -150,7 +150,7 @@ def next_turn(x_pos, y_pos):
         '''you may change the code below'''
 #         time.sleep(delay_time)
 #         start = time.time()
-        move, val = players[turn].best_strategy(board, turn)
+        move = players[turn].best_strategy(board, turn)
 #         time_used = round(time.time()-start, 3)
 #         player_max_times[turn] = max(player_max_times[turn], time_used)
 #         player_total_times[turn] = player_total_times[turn]+time_used
@@ -195,7 +195,7 @@ def init(choice_menu, e1, e2, v1, v2):
         root.update()
         '''you may change the code below'''
         time.sleep(delay_time)
-        move, idc = players[turn].best_strategy(board, turn)
+        move = players[turn].best_strategy(board, turn)
         next_turn(move[0], move[1])
     root.mainloop()
 
