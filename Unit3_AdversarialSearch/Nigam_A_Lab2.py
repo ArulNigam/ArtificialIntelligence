@@ -17,14 +17,14 @@ class RandomPlayer:
       # returns best move
       if self.first_turn:
          self.x_max, self.y_max = len(board), len(board[0])
-      all_moves = self.find_moves(board, color)
-      best_move = random.choice(tuple(all_moves))
-      # board = self.make_move(board, color, best_move)
+      possible_moves = self.find_moves(board, color)
+      if not possible_moves:
+         return (-1, -1), 0
+      best_move = random.choice(list(possible_moves))
       return best_move, 0
 
    def make_move(self, board, color, move):
       # returns board that has been updated
-      board[move[0]][move[1]] = color
       return board
 
    def find_moves(self, board, color):
@@ -65,9 +65,10 @@ class CustomPlayer:
       # returns best move
       if self.first_turn:
          self.x_max, self.y_max = len(board), len(board[0])
-      all_moves = self.find_moves(board, color)
-      best_move = random.choice(tuple(all_moves))
-      # board = self.make_move(board, color, best_move)
+      possible_moves = self.find_moves(board, color)
+      if not possible_moves:
+         return (-1, -1), 0
+      best_move = random.choice(list(possible_moves))
       return best_move, 0
 
    def minimax(self, board, color, search_depth):
@@ -84,12 +85,16 @@ class CustomPlayer:
 
    def make_move(self, board, color, move):
       # returns board that has been updated
-      board[move[0]][move[1]] = color
+      board[ move[0] ][ move[1] ] = color
       return board
 
    def evaluate(self, board, color, possible_moves):
       # returns the utility value
-      return 1
+      if find_moves(self, board, color) == None:
+         if color == self.white: #"O" can't move, "X" wins
+            return 1
+         return -1
+      return 0
 
    def find_moves(self, board, color):
       # finds all possible moves
