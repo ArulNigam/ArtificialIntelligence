@@ -72,8 +72,11 @@ class CustomPlayer:
       return best_move, 0
 
    def minimax(self, board, color, search_depth):
-      # returns best "value"
-      return 1
+      if color == self.black:
+         v, s = max_value(self, board, color, search_depth)
+      else:
+         v, s = min_value(self, board, color, search_depth)
+      return s
 
    def negamax(self, board, color, search_depth):
       # returns best "value"
@@ -85,12 +88,11 @@ class CustomPlayer:
 
    def make_move(self, board, color, move):
       # returns board that has been updated
-      board[ move[0] ][ move[1] ] = color
       return board
 
    def evaluate(self, board, color, possible_moves):
       # returns the utility value
-      if find_moves(self, board, color) == None:
+      if possible_moves == None:
          if color == self.white: #"O" can't move, "X" wins
             return 1
          return -1
@@ -118,3 +120,41 @@ class CustomPlayer:
                      y_pos += incr[1]
       self.first_turn = False
       return moves_found
+
+   def terminal_test(self, board, color, search_depth):
+      full = True
+      for i in board:
+         empty_spot = board[i].find('.')
+         if empty_spot >= 0:
+            full = False
+      if full:
+         return True
+      if find_moves(self, board, color) == None:
+         return True
+      return False
+
+   def max_value(self, board, color, search_depth):
+      if terminal_test(self, board, color, search_depth):
+         return evaluate(self, board, color, possible_moves)
+      v = -9999
+      for s in find_moves(self, board, color):
+         newv = min_value(self, board, self.opposite_color, search_depth)
+         if not (isinstance(newv, int)):
+            newv = newv[0]
+         if v < newv:
+            v = newv
+            res = s
+      return v, res
+
+   def min_value(self, board, color, search_depth):
+      if terminal_test(self, board, color, search_depth):
+         return evaluate(self, board, color, possible_moves)
+      v = 9999
+      for s in find_moves(self, board, color):
+         newv = max_value(self, board, self.opposite_color, search_depth)
+         if not (isinstance(newv, int)):
+            newv = newv[0]
+         if v < newv:
+            v = newv
+            res = s
+      return v, res
