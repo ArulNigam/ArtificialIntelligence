@@ -3,7 +3,6 @@
 
 import random, time
 
-
 class RandomPlayer:
     def __init__(self):
         self.white = "#ffffff"
@@ -62,11 +61,18 @@ class CustomPlayer:
         self.x_max = None
         self.y_max = None
         self.first_turn = True
+        self.best_moveB = None
+        self.best_moveW = None
         self.best_move = None
+
 
     def best_strategy(self, board, color):
         search_depth = 3
         # returns best move
+        if color == self.black:
+            self.best_move = self.best_moveB
+        else:
+            self.best_move = self.best_moveW
         if self.first_turn:
             self.x_max, self.y_max = len(board), len(board[0])
         possible_moves = self.find_moves(board, color)
@@ -75,6 +81,10 @@ class CustomPlayer:
         if not possible_moves:
             return (-1, -1)
         self.best_move = self.minimax(board, color, search_depth,self.best_move)
+        if color == self.black:
+            self.best_moveB = self.best_move
+        else:
+            self.best_moveW = self.best_move
         return self.best_move
 
     def minimax(self, board, color, search_depth, move):
