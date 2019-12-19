@@ -1,251 +1,267 @@
-import sys
-import os
-import time
-import tkinter as tk
-from Nigam_A_Lab2 import CustomPlayer, RandomPlayer
+# Name: Arul Nigam
+# Date: 12/10/2019
 
-# constants
-delay_time = 0
-turn_off_printing = False
-tile_size = 50
-padding = 5
-x_max = 5
-y_max = 5
-board_x = x_max * tile_size + (x_max + 1) * padding - 2
-board_y = y_max * tile_size + (y_max + 1) * padding - 2
-white = "#ffffff"
-black = "#000000"
-grey = "#505050"
-green = "#00ff00"
-yellow = "#ffff00"
-brown = "#654321"
-blue = "#0000ff"
-cyan = "#00ffff"
-red = "#ff0000"
-asterisk = " " + u'\u2217'
-directions = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
-opposite_color = {black: white, white: black}
+import random, time
 
-# variables
-player_types = {0: "Player", 1: "Random", 2: "Custom"}
-players = {black: None, white: None, None: None}
-player_max_times = {black: 0, white: 0}
-player_total_times = {black: 0, white: 0}
-p1_name = ""
-p2_name = ""
-root = None
-canvas = None
-turn = white
-board = []
-possible_moves = {i for i in range(x_max * y_max)}
-first_turn = 0
+class RandomPlayer:
+    def __init__(self):
+        self.white = "#ffffff"
+        self.black = "#000000"
+        self.directions = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
+        self.opposite_color = {self.black: self.white, self.white: self.black}
+        self.x_max = None
+        self.y_max = None
+        self.first_turn = True
 
+    def best_strategy(self, board, color):
+        # returns best move
+        if self.first_turn:
+            self.x_max, self.y_max = len(board), len(board[0])
+        possible_moves = self.find_moves(board, color)
+        if not possible_moves:
+            return (-1, -1), 0
+        best_move = random.choice(list(possible_moves))
+        return best_move, 0
 
-# commands
+    def make_move(self, board, color, move):
+        # returns board that has been updated
+        return board
 
-
-def whose_turn(my_board, prev_turn):
-    global possible_moves, first_turn
-    cur_turn = opposite_color[prev_turn]
-    possible_moves = find_moves(my_board, cur_turn)
-    first_turn += 1
-    if len(possible_moves) > 0:
-        return cur_turn
-    return None
+    def find_moves(self, board, color):
+        # finds all possible moves
+        moves_found = set()
+        self.x_max, self.y_max = len(board), len(board[0])
+        for i in range(len(board)):
+            for j in range(len(board[i])):
+                if self.first_turn and board[i][j] == ".":
+                    moves_found.add((i, j))
+                elif (color == self.black and board[i][j] == 'X') or (color == self.white and board[i][j] == 'O'):
+                    for incr in self.directions:
+                        x_pos = i + incr[0]
+                        y_pos = j + incr[1]
+                        stop = False
+                        while 0 <= x_pos < self.x_max and 0 <= y_pos < self.y_max:
+                            if board[x_pos][y_pos] != ".":
+                                stop = True
+                            if not stop:
+                                moves_found.add((x_pos, y_pos))
+                            x_pos += incr[0]
+                            y_pos += incr[1]
+        self.first_turn = False
+        return moves_found
 
 
-def find_moves(my_board, my_color):
-    global first_turn
-    moves_found = set()
-    for i in range(len(my_board)):
-        for j in range(len(my_board[i])):
-            if first_turn < 2 and my_board[i][j] == '.':
-                moves_found.add(i * y_max + j)
-            elif (my_color == black and my_board[i][j] == 'X') or (my_color == white and my_board[i][j] == 'O'):
-                for incr in directions:
-                    x_pos = i + incr[0]
-                    y_pos = j + incr[1]
-                    stop = False
-                    while 0 <= x_pos < x_max and 0 <= y_pos < y_max:
-                        if my_board[x_pos][y_pos] != '.':
-                            stop = True
-                        if not stop:
-                            moves_found.add(x_pos * y_max + y_pos)
-                        x_pos += incr[0]
-                        y_pos += incr[1]
-    return moves_found
+class CustomPlayer:
+
+    def __init__(self):
+        self.white = "#ffffff"
+        self.black = "#000000"
+        self.directions = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
+        self.opposite_color = {self.black: self.white, self.white: self.black}
+        self.x_max = None
+        self.y_max = None
+        self.first_turn = True
+        self.best_moveB = None
+        self.best_moveW = None
+        self.best_move = None
 
 
-def print_board(my_board):
-    # return  # comment to print board each time
-    print("\t", end="")
-    for i in range(x_max):
-        print(chr(ord("a") + i), end=" ")
-    print()
-    for i in range(y_max):
-        print(i + 1, end="\t")
-        for j in range(x_max):
-            print(my_board[j][i], end=" ")
-        print()
-    print()
+    def best_strategy(self, board, color):
+        search_depth = 4
+        # returns best move
+        if color == self.black:
+            self.best_move = self.best_moveB
+        else:
+            self.best_move = self.best_moveW
+        if self.first_turn:
+            self.x_max, self.y_max = len(board), len(board[0])
+        possible_moves = self.find_moves(board, color)
+        if self.best_move is None:
+            self.best_move = possible_moves.pop()
+        if not possible_moves:
+            return [-1, -1], 0
+        self.best_move = self.minimax(board, color, search_depth,self.best_move)
+        if color == self.black:
+            self.best_moveB = self.best_move
+        else:
+            self.best_moveW = self.best_move
+        return list(self.best_move), 0
 
+    def minimax(self, board, color, search_depth, move):
+        if color == self.black:
+            v, s = self.max_value(board, color, search_depth, move)
+        else:
+            v, s = self.min_value(board, color, search_depth, move)
+        return s
 
-def draw_rect(x_pos, y_pos, possible=False, wall=False):
-    coord = [x_pos * (padding + tile_size) + padding + 1, y_pos * (padding + tile_size) + padding + 1,
-             (x_pos + 1) * (padding + tile_size), (y_pos + 1) * (padding + tile_size)]
-    if possible:
-        canvas.create_rectangle(coord, fill=cyan, activefill=yellow)
-    elif wall:
-        canvas.create_rectangle(coord, fill=red)
-    else:
-        canvas.create_rectangle(coord, fill=green)
+    def negamax(self, board, color, search_depth):
+        # returns best "value"
+        return 1
 
+    def alphabeta(self, board, color, search_depth, alpha, beta):
+        # returns best "value" while also pruning
+        pass
 
-def draw_circle(x_pos, y_pos, fill_color):
-    coord = [x_pos * (padding + tile_size) + 2 * padding + 1, y_pos * (padding + tile_size) + 2 * padding + 1,
-             (x_pos + 1) * (padding + tile_size) - padding, (y_pos + 1) * (padding + tile_size) - padding]
-    canvas.create_oval(coord, fill=fill_color)
+    def make_move(self, board, color, move):
+        # returns board that has been updated
+        return board
 
+    def evaluate(self, board, color, move):
+        # returns the utility value
+        possible_moves = self.find_moves2(board, color, move)
+        if possible_moves == None:
+            if color == self.white:  # "O" can't move, "X" wins
+                return 1000, (-1, -1)
+            return -1000, (-1, -1)
+        res = (len(possible_moves) - 2 * len(self.find_moves2(board, self.opposite_color, move)))
+        return res, possible_moves.pop()
 
-def make_move(x, y):
-    if x * y_max + y not in possible_moves:
+    def find_moves(self, board, color):
+        # finds all possible moves
+        moves_found = set()
+        self.x_max, self.y_max = len(board), len(board[0])
+        for i in range(len(board)):
+            for j in range(len(board[i])):
+                if self.first_turn and board[i][j] == ".":
+                    moves_found.add((i, j))
+                elif (color == self.black and board[i][j] == 'O') or (color == self.white and board[i][j] == 'X'):
+                    for incr in self.directions:
+                        x_pos = i + incr[0]
+                        y_pos = j + incr[1]
+                        stop = False
+                        while 0 <= x_pos < self.x_max and 0 <= y_pos < self.y_max:
+                            if board[x_pos][y_pos] != ".":
+                                stop = True
+                            if not stop:
+                                moves_found.add((x_pos, y_pos))
+                            x_pos += incr[0]
+                            y_pos += incr[1]
+        self.first_turn = False
+        return moves_found
+
+    def find_moves2(self, board, color, move):
+        # finds all possible moves
+        moves_found = set()
+        # Horizontal Left
+        go = True
+        for i in range((move[0] - 1), -1, -1):
+            if go and board[i][move[1]] == ".":
+                moves_found.add((i, move[1]))
+            else:
+                go = False
+        # Horizontal Right
+        go = True
+        for i in range((move[0] + 1), len(board)):
+            if go and board[i][move[1]] == ".":
+                moves_found.add((i, move[1]))
+            else:
+                go = False
+        # Vertical Up
+        go = True
+        i = move[1] - 1
+        while go and i >= 0:
+            if board[move[0]][i] == ".":
+                moves_found.add((move[0], i))
+                i = i - 1
+            else:
+                go = False
+
+        # Vertical Down
+        go = True
+        for i in range((move[1] + 1), len(board[0])):
+            if go and board[move[0]][i] == ".":
+                moves_found.add((move[0], i))
+            else:
+                go = False
+        # Diagonal down left
+        i = move[0] - 1
+        j = move[1] - 1
+        go = True
+        while go and i >= 0 and j >= 0:
+            if board[i][j] == ".":
+                moves_found.add((i, j))
+                i = i - 1
+                j = j - 1
+            else:
+                go = False
+
+        # Diagonal Up Right
+        i = move[0] + 1
+        j = move[1] + 1
+        go = True
+        while go and i < len(board) and j < len(board[0]):
+            if board[i][j] == ".":
+                moves_found.add((i, j))
+                i = i + 1
+                j = j + 1
+            else:
+                go = False
+
+        # Diagonal Down Right
+        i = move[0] + 1
+        j = move[1] - 1
+        go = True
+        while go and i < len(board) and j >= 0:
+            if board[i][j] == ".":
+                moves_found.add((i, j))
+                i = i + 1
+                j = j - 1
+            else:
+                go = False
+
+        # Diagonal Up Left
+        i = move[0] - 1
+        j = move[1] + 1
+        go = True
+        while go and i >= 0 and j < len(board[0]):
+            if board[i][j] == ".":
+                moves_found.add((i, j))
+                i = i - 1
+                j = j + 1
+            else:
+                go = False
+
+        return moves_found
+
+    def terminal_test(self, board, color, search_depth):
+        if search_depth == 0:
+            return True
+        full = True
+        for i in board:
+            if '.' in i:
+                full = False
+        if full:
+            return True
+        if self.find_moves(board, color) == None:
+            return True
         return False
-    next_turn(x, y)
-    return True
 
-def click(event=None):
-    x = int((event.x - padding) / (padding + tile_size))
-    y = int((event.y - padding) / (padding + tile_size))
-    if x * y_max + y not in possible_moves:
-        return
-    next_turn(x, y)
+    def max_value(self, board, color, search_depth, move):
+        if self.terminal_test(board, color, search_depth):
+            res = self.evaluate(board, color, move)
+            return res
+        v = -9999
+        res = (-1, -1)
+        for s in self.find_moves2(board, color, move):
+            newv = self.min_value(board, self.opposite_color[color], search_depth - 1, s)
+            if not (isinstance(newv, int)):
+                newv = newv[0]
+            if v < newv:
+                v = newv
+                res = s
+        return v, res
 
-def next_turn(x_pos, y_pos):
-    global turn, possible_moves
-    for pos in possible_moves:
-        draw_rect(int(pos / y_max), pos % y_max)
-    if turn == black:
-        color_symbol = "X"
-    else:
-        color_symbol = "O"
-    board[x_pos][y_pos] = color_symbol
-    draw_circle(x_pos, y_pos, turn)
-    possible_moves -= {x_pos * x_max + y_pos}
-    for i in range(len(board)):
-        for j in range(len(board[i])):
-            if board[i][j] == color_symbol and (i != x_pos or j != y_pos):
-                board[i][j] = 'W'
-            if board[i][j] == 'X':
-                draw_circle(i, j, black)
-            elif board[i][j] == 'O':
-                draw_circle(i, j, white)
-            elif board[i][j] == 'W':
-                draw_rect(i, j, wall=True)
-    winner_candidate = color_symbol
-    turn = whose_turn(board, turn)
-    if turn is None:
-        print_board(board)
-        print("{} win".format(winner_candidate))
-
-        return
-    for pos in possible_moves:
-        draw_rect(int(pos / y_max), pos % y_max, True)
-    print_board(board)
-    if players[turn] != "Player":
-        root.update()
-        '''you may change the code below'''
-        #         time.sleep(delay_time)
-        #         start = time.time()
-        move, val = players[turn].best_strategy(board, turn)
-        #         time_used = round(time.time()-start, 3)
-        #         player_max_times[turn] = max(player_max_times[turn], time_used)
-        #         player_total_times[turn] = player_total_times[turn]+time_used
-        next_turn(move[0], move[1])
-
-
-def init(choice_menu, e1, e2, v1, v2):
-    global turn_off_printing, turn, root, canvas, p1_name, p2_name, players, player_types
-    if turn_off_printing:
-        sys.stdout = open(os.devnull, 'w')
-    p1_name = e1.get()
-    p2_name = e2.get()
-    players[black] = player_types[v1.get()]
-    players[white] = player_types[v2.get()]
-    p1_name = players[black]
-    p2_name = players[white]
-    if players[black] == "Random":
-        players[black] = RandomPlayer()
-    elif players[black] == "Custom":
-        players[black] = CustomPlayer()
-    if players[white] == "Random":
-        players[white] = RandomPlayer()
-    elif players[white] == "Custom":
-        players[white] = CustomPlayer()
-    choice_menu.destroy()
-    root = tk.Tk()
-    root.title("Isolation Game")
-    root.resizable(width=False, height=False)
-    canvas = tk.Canvas(root, width=board_x, height=board_y, bg=brown)
-    canvas.bind("<Button-1>", click)
-    canvas.grid(row=0, column=0, columnspan=2)
-    for i in range(x_max):
-        board.append([])
-        for j in range(y_max):
-            draw_rect(i, j)
-            board[i].append(".")
-    turn = whose_turn(board, turn)
-    for pos in possible_moves:
-        draw_rect(int(pos / y_max), pos % y_max, True)
-    print_board(board)
-    print("whose turn", players[turn])
-    if players[turn] != "Player":
-        root.update()
-        '''you may change the code below'''
-        time.sleep(delay_time)
-        move, idc = players[turn].best_strategy(board, turn)
-        next_turn(move[0], move[1])
-    root.mainloop()
-
-
-def menu():
-    global p1_name, p2_name, radio_on, radio_off
-    choice_menu = tk.Tk()
-    choice_menu.title("Menu")
-    choice_menu.resizable(width=False, height=False)
-    tk.Label(text="Black", font=("Arial", 30), bg=black, fg=grey).grid(row=0, column=0,
-                                                                       sticky=tk.W + tk.E + tk.N + tk.S)
-    tk.Label(text="White", font=("Arial", 30), bg=white, fg=black).grid(row=0, column=1,
-                                                                        sticky=tk.W + tk.E + tk.N + tk.S)
-    v1 = tk.IntVar()
-    v2 = tk.IntVar()
-    v1.set(0)
-    v2.set(0)
-    tk.Radiobutton(text="Player", compound=tk.LEFT, font=("Arial", 20), bg=black, fg=grey, anchor=tk.W, variable=v1,
-                   value=0).grid(row=1, column=0, sticky=tk.W + tk.E + tk.N + tk.S)
-    tk.Radiobutton(text="Player", font=("Arial", 20), bg=white, fg=black, anchor=tk.W, variable=v2, value=0).grid(row=1,
-                                                                                                                  column=1,
-                                                                                                                  sticky=tk.W + tk.E + tk.N + tk.S)
-    tk.Radiobutton(text="Random", font=("Arial", 20), bg=black, fg=grey, anchor=tk.W, variable=v1, value=1).grid(row=2,
-                                                                                                                 column=0,
-                                                                                                                 sticky=tk.W + tk.E + tk.N + tk.S)
-    tk.Radiobutton(text="Random", font=("Arial", 20), bg=white, fg=black, anchor=tk.W, variable=v2, value=1).grid(row=2,
-                                                                                                                  column=1,
-                                                                                                                  sticky=tk.W + tk.E + tk.N + tk.S)
-    tk.Radiobutton(text="Custom", font=("Arial", 20), bg=black, fg=grey, anchor=tk.W, variable=v1, value=2).grid(row=3,
-                                                                                                                 column=0,
-                                                                                                                 sticky=tk.W + tk.E + tk.N + tk.S)
-    tk.Radiobutton(text="Custom", font=("Arial", 20), bg=white, fg=black, anchor=tk.W, variable=v2, value=2).grid(row=3,
-                                                                                                                  column=1,
-                                                                                                                  sticky=tk.W + tk.E + tk.N + tk.S)
-    e1 = tk.Entry(font=("Arial", 15), bg=black, fg=grey, width=12)
-    e2 = tk.Entry(font=("Arial", 15), bg=white, fg=black, width=12)
-    e1.insert(0, "Player 1 Name")
-    e2.insert(0, "Player 2 Name")
-    e1.grid(row=99, column=0, sticky=tk.W + tk.E + tk.N + tk.S)
-    e2.grid(row=99, column=1, sticky=tk.W + tk.E + tk.N + tk.S)
-    tk.Button(text="Begin", font=("Arial", 15), bg=white, fg=black,
-              command=lambda: init(choice_menu, e1, e2, v1, v2)).grid(row=100, column=0, columnspan=2,
-                                                                      sticky=tk.W + tk.E + tk.N + tk.S)
-    choice_menu.mainloop()
-
-menu()
+    def min_value(self, board, color, search_depth, move):
+        if self.terminal_test(board, color, search_depth):
+            res = self.evaluate(board, color, move)
+            return res
+        v = 9999
+        res = (-1, -1)
+        for s in self.find_moves2(board, color, move):
+            newv = self.max_value(board, self.opposite_color[color], search_depth - 1, s)
+            if not (isinstance(newv, int)):
+                newv = newv[0]
+            if v > newv:
+                v = newv
+                res = s
+        return v, res
