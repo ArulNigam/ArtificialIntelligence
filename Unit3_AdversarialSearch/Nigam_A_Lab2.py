@@ -1,3 +1,26 @@
+Due Dec 16, 2019, 11:00 PM
+Lab2 Isolation
+30 points
+Nicole Kim Dec 9, 2019
+Submit lastName_firstInitial_isolation_runner.py (if you modified the given code) and lastName_firstInitial_Lab2.py (change shell to this).
+
+Complete RandomPlayer() and CustomPlayer().
+isolation_runner.py
+Text
+Lab2_isolation_shell.py
+Text
+1 class comment
+Daniel FuDec 17, 2019
+Autocheck your algorithm against random: http://bit.ly/isogame
+Your work
+Turned in late
+Nigam_A_isolation_runner.py
+Text
+Nigam_A_Lab2.py
+Text
+Private comments
+Lab2 Isolation
+
 # Name: Arul Nigam
 # Date: 12/10/2019
 
@@ -67,7 +90,7 @@ class CustomPlayer:
 
 
     def best_strategy(self, board, color):
-        search_depth = 3
+        search_depth = 4
         # returns best move
         if color == self.black:
             self.best_move = self.best_moveB
@@ -79,13 +102,13 @@ class CustomPlayer:
         if self.best_move is None:
             self.best_move = possible_moves.pop()
         if not possible_moves:
-            return (-1, -1)
+            return [-1, -1], 0
         self.best_move = self.minimax(board, color, search_depth,self.best_move)
         if color == self.black:
             self.best_moveB = self.best_move
         else:
             self.best_moveW = self.best_move
-        return self.best_move
+        return list(self.best_move), 0
 
     def minimax(self, board, color, search_depth, move):
         if color == self.black:
@@ -111,9 +134,10 @@ class CustomPlayer:
         possible_moves = self.find_moves2(board, color, move)
         if possible_moves == None:
             if color == self.white:  # "O" can't move, "X" wins
-                return 1, (-1, -1)
-            return -1, (-1, -1)
-        return 0, possible_moves.pop()
+                return 1000, (-1, -1)
+            return -1000, (-1, -1)
+        res = (len(possible_moves) - 2 * len(self.find_moves2(board, self.opposite_color, move)))
+        return res, possible_moves.pop()
 
     def find_moves(self, board, color):
         # finds all possible moves
