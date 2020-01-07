@@ -1,53 +1,187 @@
-class Best_AI_bot:
+Due 11:00 PM
+Lab3 Othello Part 1
+30 points
+Nicole Kim Dec 17, 2019 (Edited 10:12 AM)
+othello_runner.py is a driver. Do not change it.
+
+In your code, complete RandomBot() and Minimax_AI_bot()
+File name: lastName_firstInitial_Lab3.py
+Lab3_othello_shell.py
+Text
+othello_runner.py
+Text
+1 class comment
+Daniel Fu5:42 PM
+Possible bug in the shell, the line:
+> self.white = "o"
+makes more sense as
+> self.white = "O"
+because a capital O is used everywhere else.
+Your work
+Turned in late
+Nigam_A_Lab3.py
+Text
+Private comments
+
+# Name: Arul Nigam
+import random
+
+class RandomBot():
 
    def __init__(self):
-      self.white = "o"
+      self.white = "O"
+      self.black = "@"
+      self.directions = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
+      self.opposite_color = {self.black: self.white, self.white: self.black}
+      self.x_max = None
+      self.y_max = None
+      self.first_turn = True
+
+   def best_strategy(self, board, color):
+        # returns best move
+        if self.first_turn:
+            self.x_max, self.y_max = len(board), len(board[0])
+        possible_moves = self.find_moves(board, color)
+        if not possible_moves:
+            return [-1, -1], 0
+        #best_move = possible_moves[random.choice(list(possible_moves.keys()))]
+        random_move = random.choice(list(possible_moves.keys()))
+        return [random_move // self.y_max, random_move % self.y_max], 0
+
+   def find_moves(self, my_board, my_color):
+      moves_found = {}
+      for i in range(len(my_board)):
+         for j in range(len(my_board[i])):
+            if my_board[i][j] == ".":
+               flipped_stones = self.find_flipped(my_board, i, j, my_color)
+               if len(flipped_stones) > 0:
+                  moves_found.update({i * self.y_max + j: flipped_stones})
+      return moves_found
+
+   def find_flipped(self, my_board, x, y, my_color):
+      if my_board[x][y] != ".":
+         return []
+      if my_color == self.black:
+         my_color = "@"
+      else:
+         my_color = "O"
+      flipped_stones = []
+      for incr in self.directions:
+         temp_flip = []
+         x_pos = x + incr[0]
+         y_pos = y + incr[1]
+         while 0 <= x_pos < self.x_max and 0 <= y_pos < self.y_max:
+            if my_board[x_pos][y_pos] == ".":
+               break
+            if my_board[x_pos][y_pos] == my_color:
+               flipped_stones += temp_flip
+               break
+            temp_flip.append([x_pos, y_pos])
+            x_pos += incr[0]
+            y_pos += incr[1]
+      return flipped_stones
+
+class Minimax_AI_bot():
+
+   def __init__(self):
+      self.white = "O"
+      self.black = "@"
+      self.directions = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
+      self.opposite_color = {self.black: self.white, self.white: self.black}
+      self.x_max = None
+      self.y_max = None
+      self.first_turn = True
+
+   def best_strategy(self, board, color):
+      # returns best move
+      if self.first_turn:
+         self.x_max, self.y_max = len(board), len(board[0])
+         possible_moves = self.find_moves(board, color)
+         if not possible_moves:
+            return [-1, -1], 0
+         #best_move = possible_moves[random.choice(list(possible_moves.keys()))]
+         #random_move = random.choice(list(possible_moves.keys()))
+         #return [random_move // self.y_max, random_move % self.y_max], 0
+         return self.evaluate(board, color, possible_moves)
+
+   def make_move(self, board, color, x, y):
+      if color == "#ffffff":
+        color_symbol = "O"
+      else:
+         color_symbol = "@"
+      board[x][y] = color_symbol
+
+   def evaluate(self, board, color, possible_moves):
+      start_val = self.score(board, color) + 1
+      max_value = -999
+      best_move = None
+      for move in list(possible_moves.keys()):
+         value = start_val + len(self.find_flipped(board, move // self.y_max, move % self.y_max, color))
+         if value > max_value:
+            max_value = value
+            best_move = move
+      return [best_move // self.y_max, best_move % self.y_max], max_value
+
+   def score(self, board, color):
+      score1 = 0 # @
+      score2 = 0 # O
+      for i in range(len(board)):
+         for j in range(len(board[i])):
+            if board[i][j] == "@":
+               score1 += 1
+            if board[i][j] == "O":
+               score2 += 1
+      if color == self.white:
+         return score2 - score1
+      return score1 - score2
+
+   def find_moves(self, my_board, my_color):
+      moves_found = {}
+      for i in range(len(my_board)):
+         for j in range(len(my_board[i])):
+            if my_board[i][j] == ".":
+               flipped_stones = self.find_flipped(my_board, i, j, my_color)
+               if len(flipped_stones) > 0:
+                  moves_found.update({i * self.y_max + j: flipped_stones})
+      return moves_found
+
+   def find_flipped(self, my_board, x, y, my_color):
+      if my_board[x][y] != ".":
+         return []
+      if my_color == self.black:
+         my_color = "@"
+      else:
+         my_color = "O"
+      flipped_stones = []
+      for incr in self.directions:
+         temp_flip = []
+         x_pos = x + incr[0]
+         y_pos = y + incr[1]
+         while 0 <= x_pos < self.x_max and 0 <= y_pos < self.y_max:
+            if my_board[x_pos][y_pos] == ".":
+               break
+            if my_board[x_pos][y_pos] == my_color:
+               flipped_stones += temp_flip
+               break
+            temp_flip.append([x_pos, y_pos])
+            x_pos += incr[0]
+            y_pos += incr[1]
+      return flipped_stones
+
+class Alpha_beta_AI_bot():
+   def __init__(self):
+      self.white = "O"
       self.black = "@"
       self.directions = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
       self.opposite_color = {self.black: self.white, self.white: self.black}
       self.x_max = None
       self.y_max = None
 
-   def best_strategy(self, board, color):
-      # returns best move
-      return best_move, 0
-
-   def minimax(self, board, color, search_depth):
-      # returns best "value"
-      return 1
-
-   def negamax(self, board, color, search_depth):
-      # returns best "value"
-      return 1
-      
-   def alphabeta(self, board, color, search_depth, alpha, beta):
-      # returns best "value" while also pruning
-      pass
-
-   def make_key(self, board, color):
-      # hashes the board
-      return 1
-
-   def stones_left(self, board):
-      # returns number of stones that can still be placed
-      return 1
-
-   def make_move(self, board, color, move, flipped):
-      # returns board that has been updated
-      return 1
-
-   def evaluate(self, board, color, possible_moves):
-      # returns the utility value
-      return 1
-
-   def score(self, board, color):
-      # returns the score of the board 
-      return 1
-
-   def find_moves(self, board, color):
-      # finds all possible moves
-      return 1
-
-   def find_flipped(self, board, x, y, color):
-      # finds which chips would be flipped given a move and color
-      return 1
+class Best_AI_bot():
+   def __init__(self):
+      self.white = "O"
+      self.black = "@"
+      self.directions = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
+      self.opposite_color = {self.black: self.white, self.white: self.black}
+      self.x_max = None
+      self.y_max = None
