@@ -1,4 +1,3 @@
-
 import sys
 import os
 import time
@@ -191,7 +190,6 @@ def next_turn(x_pos, y_pos):
         player_total_times[turn] = player_total_times[turn]+time_used
         next_turn(move[0], move[1])
 
-
 def init(choice_menu, e1, e2, v1, v2):
     global turn_off_printing, turn, root, canvas, score1_str, score2_str, p1_name, p2_name, players, player_types
     if turn_off_printing:
@@ -200,6 +198,7 @@ def init(choice_menu, e1, e2, v1, v2):
     p2_name = e2.get()
     players[black] = player_types[v1.get()]
     players[white] = player_types[v2.get()]
+#    print(players, "wbdfkjwhwjflhwfilwhwfej;l")
     p1_name = players[black]
     p2_name = players[white]
     if players[black] == "Random":
@@ -209,7 +208,7 @@ def init(choice_menu, e1, e2, v1, v2):
     elif players[black] == "Alpha-beta AI":
         players[black] = Alpha_beta_AI_bot()
     elif players[black] == "Best AI":
-        players[black] == Best_AI_bot()
+        players[black] = Best_AI_bot()
     if players[white] == "Random":
         players[white] = RandomBot()
     elif players[white] == "Minimax AI":
@@ -218,6 +217,7 @@ def init(choice_menu, e1, e2, v1, v2):
         players[white] = Alpha_beta_AI_bot()
     elif players[white] == "Best AI":
         players[white] = Best_AI_bot()
+    #print(players)
     choice_menu.destroy()
     root = tk.Tk()
     root.title("Othello Game")

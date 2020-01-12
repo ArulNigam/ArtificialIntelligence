@@ -1,26 +1,3 @@
-Due Dec 16, 2019, 11:00 PM
-Lab2 Isolation
-30 points
-Nicole Kim Dec 9, 2019
-Submit lastName_firstInitial_isolation_runner.py (if you modified the given code) and lastName_firstInitial_Lab2.py (change shell to this).
-
-Complete RandomPlayer() and CustomPlayer().
-isolation_runner.py
-Text
-Lab2_isolation_shell.py
-Text
-1 class comment
-Daniel FuDec 17, 2019
-Autocheck your algorithm against random: http://bit.ly/isogame
-Your work
-Turned in late
-Nigam_A_isolation_runner.py
-Text
-Nigam_A_Lab2.py
-Text
-Private comments
-Lab2 Isolation
-
 # Name: Arul Nigam
 # Date: 12/10/2019
 
@@ -126,12 +103,25 @@ class CustomPlayer:
         pass
 
     def make_move(self, board, color, move):
+        # get the current stone
+        stone = "X"
+        if color == self.white:
+            stone = "O"
+        # copy each item into a new list
+        ret_board = []
+        for i in range(self.x_max):
+            ret_board += [[]]
+            for j in range(self.y_max):
+                ret_board[i] += [board[i][j]]
+                if board[i][j] == stone:
+                    ret_board[i][j] = "W"
+        ret_board[move[0]][move[1]] = stone
         # returns board that has been updated
         return board
 
     def evaluate(self, board, color, move):
         # returns the utility value
-        possible_moves = self.find_moves2(board, color, move)
+        ###################possible_moves = self.find_moves2(board, color, move)
         if possible_moves == None:
             if color == self.white:  # "O" can't move, "X" wins
                 return 1000, (-1, -1)

@@ -1,28 +1,3 @@
-Due 11:00 PM
-Lab3 Othello Part 1
-30 points
-Nicole Kim Dec 17, 2019 (Edited 10:12 AM)
-othello_runner.py is a driver. Do not change it.
-
-In your code, complete RandomBot() and Minimax_AI_bot()
-File name: lastName_firstInitial_Lab3.py
-Lab3_othello_shell.py
-Text
-othello_runner.py
-Text
-1 class comment
-Daniel Fu5:42 PM
-Possible bug in the shell, the line:
-> self.white = "o"
-makes more sense as
-> self.white = "O"
-because a capital O is used everywhere else.
-Your work
-Turned in late
-Nigam_A_Lab3.py
-Text
-Private comments
-
 # Name: Arul Nigam
 import random
 
