@@ -15,7 +15,7 @@ class Crossword():
         self.col_max = 1 ##########################
         self.length = self.row_max * self.col_max
 
-    def add_blocked_squares():
+#    def add_blocked_squares():
 
     def check_connectivity(self, board):
         start = board.index(OPENCHAR)
@@ -40,6 +40,7 @@ class Crossword():
             return connected
 
     def index_to_coordinates(index):
+        return [index / self.row_max, index % self.col_max]
 
     def check_legal(self, moved_board):
         return self.make_palindrome(moved_board)[1]
@@ -78,8 +79,27 @@ class Crossword():
 ####################################################################################
 
 def main():
-    input = sys.argv
-    temp = Crossword()
+    intTest = [r"^(\d+)x(\d+)$", r"^\d+$", r"^(H|V)(\d+)x(\d+)(.+)$"]
+    inp = sys.argv
+    filename = input[0]
+    inititial_words_list = []
+    for i in range(1, len(input)):
+        if re.match(intTest[0], input[i]): # board size
+            height = input[i][:input[i].index("x") + 1]
+            width = input[i][input[i].index("x") + 1:]
+        else if re.match(intTest[1], input[i]): # number of blocked squares
+            blocked_square_count = int(input[i])
+        else if: # filename scrablle
+        else if re.match(intTest[2], input[i]):  # coordinate + word
+            is_vertical = ("v" == input[i][0])
+            start_index = [input[i][1], input[i][3]]
+            word = input[i][4:]
+            ###########################################add tuple to inititial words, dont use input
+
+
+
+    #input = sys.argv
+    #temp = Crossword()
     #display(board)
 
 if __name__ == '__main__':
