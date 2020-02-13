@@ -2,20 +2,38 @@
 # Period 3
 # Crossword Pt. 1
 
-import os, random, re, sys
+import os, random, re, sys, time
 
 BLOCKCHAR = '#'
 OPENCHAR = "-"
 PROTECTEDCHAR = "'~"
 
-class Crossword():
-    def __init__(self):
-        self.board = ""
-        self.row_max = 1 ##########################
-        self.col_max = 1 ##########################
-        self.length = self.row_max * self.col_max
 
-#    def add_blocked_squares():
+def printboard(board, height, width):
+    row = []
+    for i in range(len(board)):
+        row.append(board[i])
+        if ((i+1) % width == 0):
+            print("".join(row))
+            row = []
+    print()
+
+
+class Crossword():
+    def __init__(self, height, width):
+        self.row_max = height  ##########################
+        self.col_max = width  ##########################
+        self.length = self.row_max * self.col_max
+        self.board = [OPENCHAR] * (height * width)
+
+    #    def add_blocked_squares():
+
+    def setinitial(self,initial):
+        for i in range(len(initial)):
+            self.board[initial[i][0]] = initial[i][1]
+        printboard(self.board, self.row_max, self.col_max)
+
+
 
     def check_connectivity(self, board):
         start = board.index(OPENCHAR)
@@ -46,19 +64,19 @@ class Crossword():
         return self.make_palindrome(moved_board)[1]
 
     def make_palindrome(self, temp_board):  # check if it properly captures middle
-        board_list = list(temp_board):
-        for i in range(len(board_list)):
-            if board_list[i] != board_list[self.length - i]:
-                if board_list[i] == PROTECTEDCHAR or board_list[self.length - i] == PROTECTEDCHAR:
-                    if board_list[i] == OPENCHAR or board_list[self.length - i] == OPENCHAR:
-                        board_list[i] = PROTECTEDCHAR
-                        board_list[self.length - i] = PROTECTEDCHAR
-                    if board_list[i] == BLOCKCHAR or board_list[self.length - i] == BLOCKCHAR:
-                        return ["", False]  # THERE IS A BOARD CONFLICT
-                else:
-                    board_list[i] = BLOCKCHAR
-                    board_list[self.length - i] = BLOCKCHAR
-        return [''.join(board_list), True]
+            board_list = list(temp_board)
+            for i in range(len(board_list)):
+                if board_list[i] != board_list[self.length - i]:
+                    if board_list[i] == PROTECTEDCHAR or board_list[self.length - i] == PROTECTEDCHAR:
+                        if board_list[i] == OPENCHAR or board_list[self.length - i] == OPENCHAR:
+                            board_list[i] = PROTECTEDCHAR
+                            board_list[self.length - i] = PROTECTEDCHAR
+                        if board_list[i] == BLOCKCHAR or board_list[self.length - i] == BLOCKCHAR:
+                            return ["", False]  # THERE IS A BOARD CONFLICT
+                    else:
+                        board_list[i] = BLOCKCHAR
+                        board_list[self.length - i] = BLOCKCHAR
+            return [''.join(board_list), True]
 
     def coordinates_to_index(self, row_num, col_num):
         return row_num * self.col_max + col_num
@@ -76,31 +94,51 @@ class Crossword():
                 board_list[i] = OPENCHAR
         return ''.join(board_list)
 
+
+
+
 ####################################################################################
 
 def main():
-    intTest = [r"^(\d+)x(\d+)$", r"^\d+$", r"^(H|V)(\d+)x(\d+)(.+)$"]
-    inp = sys.argv
-    filename = input[0]
-    inititial_words_list = []
+    intTest = [r"^(\d+)x(\d+)$", r"^\d+$", r"^(H|V|h|v)(\d+)x(\d+)(.+)$"]
+    input = sys.argv
+    for i in range(len(input)):
+        print(i, input[i])
+    initial_words_list = []
+    initial_values = []
+
     for i in range(1, len(input)):
-        if re.match(intTest[0], input[i]): # board size
-            height = input[i][:input[i].index("x") + 1]
-            width = input[i][input[i].index("x") + 1:]
-        else if re.match(intTest[1], input[i]): # number of blocked squares
+        if re.match(intTest[0], input[i]):  # board size
+            height = int(input[i][:input[i].index("x")])
+            width = int(input[i][input[i].index("x") + 1])
+        elif os.path.isfile(input[i]):  # filename scrablle
+            filename = input[i]
+        elif re.match(intTest[1], input[i]):  # number of blocked squares
             blocked_square_count = int(input[i])
-        else if: # filename scrablle
-        else if re.match(intTest[2], input[i]):  # coordinate + word
-            is_vertical = ("v" == input[i][0])
-            start_index = [input[i][1], input[i][3]]
+        elif re.match(intTest[2], input[i]):  # coordinate + word
+            is_vertical = ("V" == input[i][0]) | ("v" == input[i][0])
+            start_index = [int(input[i][1]), int(input[i][3])]
             word = input[i][4:]
-            ###########################################add tuple to inititial words, dont use input
+            if is_vertical:
+                for j in range(len(word)):
+                    boardpos = (start_index[0]+j) * width + start_index[1]
+                    initial_values.append([boardpos, word[j]])
+                if (start_index[0]+len(word)+1) < height:
+                    initial_values.append([(start_index[0]+len(word)) * width + start_index[1], BLOCKCHAR])
+            else:
+                for j in range(len(word)):
+                    boardpos = (start_index[0]) * width + start_index[1]+j
+                    initial_values.append([boardpos, word[j]])
+                if (start_index[1]+len(word)) < width:
+                    initial_values.append([start_index[0] * width + start_index[1]+len(word), BLOCKCHAR])
 
 
+    puzzle = Crossword(height,width)
+    puzzle.setinitial(initial_values)
+    # input = sys.argv
+    # temp = Crossword()
+    # display(board)
 
-    #input = sys.argv
-    #temp = Crossword()
-    #display(board)
 
 if __name__ == '__main__':
     main()
