@@ -6,33 +6,174 @@ import os, random, re, sys, time
 
 BLOCKCHAR = '#'
 OPENCHAR = "-"
-PROTECTEDCHAR = "'~"
+PROTECTEDCHAR = "~"
 
 
-def printboard(board, height, width):
+def print_board(board, width):
     row = []
-    for i in range(len(board)):
+    for i in range(width, len(board) - width):
         row.append(board[i])
-        if ((i+1) % width == 0):
-            print("".join(row))
+        if (i + 1) % width == 0:
+            print("".join(row)[1: width - 1])
             row = []
     print()
 
 
 class Crossword():
     def __init__(self, height, width):
-        self.row_max = height  ##########################
-        self.col_max = width  ##########################
+        self.row_max = height
+        self.col_max = width
         self.length = self.row_max * self.col_max
         self.board = [OPENCHAR] * (height * width)
 
-    #    def add_blocked_squares():
+    def transpose(self, xw, current_width):
+        return "".join([xw[col::current_width] for col in range(current_width)])
 
-    def setinitial(self,initial):
+    def set_initial(self, initial, blocked_square_count):
         for i in range(len(initial)):
             self.board[initial[i][0]] = initial[i][1]
-        printboard(self.board, self.row_max, self.col_max)
+        print("Initial input")
+        print_board(self.board, self.col_max)
+        xword = "".join(self.board)
+        xw = BLOCKCHAR * (self.col_max + 3)
+        xw += (BLOCKCHAR * 2).join(xword[p:p + self.col_max] for p in range(0, len(xword), self.col_max))
+        xw += BLOCKCHAR * (self.col_max + 3)
+        print("Added border")
+        print_board(xw, self.col_max + 2)
+        letters = xw
+        xw = self.add_protected_char(xw, self.col_max + 2)
 
+        print("added protected")
+        print_board(xw, self.col_max + 2)
+
+        # Try until number of blocked spaces = target
+
+        xw = self.add_blocked_char(xw, self.col_max + 2)
+        num_blocked = xw.count("#")
+        board_len = len(self.board)
+
+        for position in range(len(self.board)):
+            self.board = list(xw)
+            if blocked_square_count % 2 == 1:
+                self.board[int(len(self.board)/2)] = "#"
+
+            #position = random.randint(self.col_max+4, board_len - self.col_max - 4)
+            if (num_blocked < blocked_square_count) & (position != int(len(self.board)/2)):
+                if self.board[position] == "-":
+
+                    temp_board = self.board
+                    temp_board[position] = "#"
+                    temp_xw = "".join(temp_board)
+                    temp_xw = self.make_palindrome(temp_xw)
+                    temp_xw = "".join(list(temp_xw[0]))
+                    #temp_xw = self.add_blocked_char(temp_xw, self.col_max + 2)
+                    if self.is_legal(temp_xw):
+                        print("2", position)
+                        self.board[position] = "#"
+                        xw = temp_xw
+                        self.board = list(xw)
+                        num_blocked = xw.count("#")
+
+        print("added blocked spaces")
+        print_board(xw, self.col_max + 2)
+
+        letters = list(letters)
+        for i in range(len(self.board)):
+            if letters[i].isalpha():
+                self.board[i] = letters[i]
+            if self.board[i] == PROTECTEDCHAR:
+                self.board[i] = OPENCHAR
+        xw = "".join(self.board)
+        print_board(xw, self.col_max + 2)
+        self.board=list(xw)
+
+    def is_legal(self, xw):
+        if xw.find("#-#") >= 0:
+            print("not legal 1", xw)
+            return False
+        if xw.find("#--#") >= 0:
+            print("not legal 2")
+            return False
+        if xw.find("#~-#") >= 0:
+            print("not legal 3")
+            return False
+        if xw.find("#-~#") >= 0:
+            print("not legal 4")
+            return False
+        if xw.find("#~#") >= 0:
+            print("not legal 5")
+            return False
+        if xw.find("#~~#") >= 0:
+            print("not legal 6", xw)
+            return False
+        xw = self.transpose(xw, self.col_max+2)
+        if xw.find("#-#") >= 0:
+            print("not legal 7")
+            return False
+        if xw.find("#--#") >= 0:
+            print("not legal 8")
+            return False
+        if xw.find("#~-#") >= 0:
+            print("not legal 9", xw)
+            return False
+        if xw.find("#-~#") >= 0:
+            print("not legal 10")
+            return False
+        if xw.find("#~#") >= 0:
+            print("not legal 11")
+            return False
+        if xw.find("#~~#") >= 0:
+            print("not legal 12")
+            return False
+        return True
+
+
+    def add_protected_char(self, board, width):
+
+        tempboard = list(board)
+        for i in range(len(tempboard)):
+            if "".join(tempboard[i]).isalpha():
+                tempboard[i] = PROTECTEDCHAR
+        board = self.make_palindrome(tempboard)
+        board = "".join(list(board[0]))
+
+        originalboard = board
+        fixboard = True
+        while fixboard:
+            board = board.replace("#~-", "#~~")
+            board = board.replace("-~#", "~~#")
+            board = board.replace("#~~-", "#~~~")
+            board = board.replace("#-~-", "#-~~")
+            board = board.replace("-~~#", "~~~#")
+            board = board.replace("-~-#", "~~-#")
+            board = self.make_palindrome(board)
+            board = "".join(list(board[0]))
+
+            fixboard = not (originalboard == board)
+            originalboard = board
+
+        return board
+
+    def add_blocked_char(self, board, width):
+
+        originalboard = board
+        fixboard = True
+        while fixboard:
+            board = board.replace("#-#", "###")
+            board = board.replace("#--#", "####")
+            board = self.make_palindrome(board)
+            board = "".join(list(board[0]))
+            board = self.transpose(board,self.col_max+2)
+            board = board.replace("#-#", "###")
+            board = board.replace("#--#", "####")
+            board = self.make_palindrome(board)
+            board = "".join(list(board[0]))
+            board = self.transpose(board, self.row_max+2)
+
+            fixboard = not (originalboard == board)
+            originalboard = board
+
+        return board
 
 
     def check_connectivity(self, board):
@@ -53,30 +194,33 @@ class Crossword():
     def connectivity_helper(self, space, board, connected, explored):
         if (board[space] == OPENCHAR) or (board[space] == PROTECTEDCHAR):
             connected.append(space)
-            for temp_space in self.adjacents(space):
-                connected.append(self.connectivity_helper(temp_space, board, connected))
+            for temp_space in self.adjacents(space, explored):
+                connected.append(self.connectivity_helper(temp_space, board, connected, explored))
             return connected
 
-    def index_to_coordinates(index):
+    def index_to_coordinates(self, index):
         return [index / self.row_max, index % self.col_max]
 
     def check_legal(self, moved_board):
         return self.make_palindrome(moved_board)[1]
 
     def make_palindrome(self, temp_board):  # check if it properly captures middle
-            board_list = list(temp_board)
-            for i in range(len(board_list)):
-                if board_list[i] != board_list[self.length - i]:
-                    if board_list[i] == PROTECTEDCHAR or board_list[self.length - i] == PROTECTEDCHAR:
-                        if board_list[i] == OPENCHAR or board_list[self.length - i] == OPENCHAR:
-                            board_list[i] = PROTECTEDCHAR
-                            board_list[self.length - i] = PROTECTEDCHAR
-                        if board_list[i] == BLOCKCHAR or board_list[self.length - i] == BLOCKCHAR:
-                            return ["", False]  # THERE IS A BOARD CONFLICT
-                    else:
-                        board_list[i] = BLOCKCHAR
-                        board_list[self.length - i] = BLOCKCHAR
-            return [''.join(board_list), True]
+        works = True
+        board = list(temp_board)
+        board_length = len(board)
+        for i in range(board_length):
+            i_mirror = board_length - i - 1
+            if board[i] == BLOCKCHAR:
+                if board[i_mirror] == PROTECTEDCHAR:
+                    works = False
+                else:
+                    board[i_mirror] = board[i]
+            if board[i] == PROTECTEDCHAR:
+                if board[i_mirror] == BLOCKCHAR:
+                    works = False
+                else:
+                    board[i_mirror] = board[i]
+        return [board, works]
 
     def coordinates_to_index(self, row_num, col_num):
         return row_num * self.col_max + col_num
@@ -95,49 +239,38 @@ class Crossword():
         return ''.join(board_list)
 
 
-
-
-####################################################################################
-
 def main():
     intTest = [r"^(\d+)x(\d+)$", r"^\d+$", r"^(H|V|h|v)(\d+)x(\d+)(.+)$"]
-    input = sys.argv
-    for i in range(len(input)):
-        print(i, input[i])
+    user_input = sys.argv
+    for i in range(len(user_input)):
+        print(i, user_input[i])
     initial_words_list = []
     initial_values = []
-
-    for i in range(1, len(input)):
-        if re.match(intTest[0], input[i]):  # board size
-            height = int(input[i][:input[i].index("x")])
-            width = int(input[i][input[i].index("x") + 1])
-        elif os.path.isfile(input[i]):  # filename scrablle
-            filename = input[i]
-        elif re.match(intTest[1], input[i]):  # number of blocked squares
-            blocked_square_count = int(input[i])
-        elif re.match(intTest[2], input[i]):  # coordinate + word
-            is_vertical = ("V" == input[i][0]) | ("v" == input[i][0])
-            start_index = [int(input[i][1]), int(input[i][3])]
-            word = input[i][4:]
+    for i in range(1, len(user_input)):
+        if re.match(intTest[0], user_input[i]):  # board size
+            result = re.search("^(\d+)x(\d+)$", user_input[i])
+            height = int(result.group(1))
+            width = int(result.group(2))
+        elif os.path.isfile(user_input[i]):  # filename scrabble
+            filename = user_input[i]
+        elif re.match(intTest[1], user_input[i]):  # number of blocked squares
+            blocked_square_count = int(user_input[i])
+        elif re.match(intTest[2], user_input[i]):  # coordinate + word
+            is_vertical = ("V" == user_input[i][0]) | ("v" == user_input[i][0])
+            result = re.search("^(H|V)(\d+)x(\d+)(.+)$", user_input[i], re.IGNORECASE)
+            start_index = [int(result.group(2)), int(result.group(3))]
+            word = result.group(4)
             if is_vertical:
                 for j in range(len(word)):
-                    boardpos = (start_index[0]+j) * width + start_index[1]
-                    initial_values.append([boardpos, word[j]])
-                if (start_index[0]+len(word)+1) < height:
-                    initial_values.append([(start_index[0]+len(word)) * width + start_index[1], BLOCKCHAR])
+                    board_pos = (start_index[0] + j) * width + start_index[1]
+                    initial_values.append([board_pos, word[j]])
             else:
                 for j in range(len(word)):
-                    boardpos = (start_index[0]) * width + start_index[1]+j
-                    initial_values.append([boardpos, word[j]])
-                if (start_index[1]+len(word)) < width:
-                    initial_values.append([start_index[0] * width + start_index[1]+len(word), BLOCKCHAR])
-
-
-    puzzle = Crossword(height,width)
-    puzzle.setinitial(initial_values)
-    # input = sys.argv
-    # temp = Crossword()
-    # display(board)
+                    board_pos = (start_index[0]) * width + start_index[1] + j
+                    initial_values.append([board_pos, word[j]])
+    print("size, block count [", height,"x", width, "] ", blocked_square_count)
+    puzzle = Crossword(height, width)
+    puzzle.set_initial(initial_values, (blocked_square_count+(width+height+2)*2))
 
 
 if __name__ == '__main__':
