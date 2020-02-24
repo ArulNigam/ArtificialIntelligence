@@ -19,6 +19,15 @@ def print_board(board, width):
     print()
 ########################################################################
 
+def connected_words(xw):
+    connections = {}
+    for i in range(len(xw)):
+        if xw[i] == "-":
+            temp = []
+            next_wall  = xw.find("##", i)
+            for i in range(next_wall - row_max, next_wall): # horizontally
+
+
 def fill(guess, start, xw, is_vertical):
     guess = guess[0]
     xw = list(xw)
@@ -45,7 +54,7 @@ def find_longest_word(xw):
     vertical_match = re.search(rgx, xw)
     if vertical_match:
         group = vertical_match.group()
-        vertical_start = xw.index(group) + 1 ##################### TRANSPOSE THIS NUM
+        vertical_start = len(xw) - (xw.index(group) + 1) ##################### TRANSPOSE THIS NUM
         vertical_length = len(group) - 2
     else:
         vertical_start = -1
@@ -54,11 +63,12 @@ def find_longest_word(xw):
         return horizontal_start, False, horizontal_length
     return vertical_start, True, vertical_length
 
-def is_valid(new, old):
+def is_valid(new, old, start, is_vertical):
     for i in range(len(old)):
         if new[i] != old[i]: # there is a modification
             if old[i] != OPENCHAR: # invalid modification
                 return False
+
     return True
 
 def solve(xw, words_by_length):
@@ -71,7 +81,7 @@ def solve_helper(xw, words_by_length):
     for guess in words_by_length[length]:
         filled = fill(guess, start, xw, is_vertical)
         print_board(filled, col_max + 4)
-        if is_valid(filled, xw):
+        if is_valid(filled, xw, start, is_vertical):
             return solve_helper(filled, words_by_length)
 
 def sort_by_richness(words, frequency):
