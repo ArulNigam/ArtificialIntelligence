@@ -2,7 +2,7 @@
 # Period 3
 # Crossword Pt. 1
 
-import os, random, re, sys, time
+import os, re, sys, time
 
 BLOCKCHAR = '#'
 OPENCHAR = "-"
@@ -32,35 +32,28 @@ class Crossword():
     def set_initial(self, initial, blocked_square_count):
         for i in range(len(initial)):
             self.board[initial[i][0]] = initial[i][1]
-        print("Initial input")
-        print_board(self.board, self.col_max)
+
         xword = "".join(self.board)
         xw = BLOCKCHAR * (self.col_max + 3)
         xw += (BLOCKCHAR * 2).join(xword[p:p + self.col_max] for p in range(0, len(xword), self.col_max))
         xw += BLOCKCHAR * (self.col_max + 3)
-        print("Added border")
+        print("Initial board w. border")
         print_board(xw, self.col_max + 2)
         letters = xw
         xw = self.add_protected_char(xw, self.col_max + 2)
-
         print("added protected")
         print_board(xw, self.col_max + 2)
-
         # Try until number of blocked spaces = target
-
         xw = self.add_blocked_char(xw, self.col_max + 2)
         num_blocked = xw.count("#")
         board_len = len(self.board)
-
         for position in range(len(self.board)):
             self.board = list(xw)
             if blocked_square_count % 2 == 1:
                 self.board[int(len(self.board)/2)] = "#"
-
             #position = random.randint(self.col_max+4, board_len - self.col_max - 4)
             if (num_blocked < blocked_square_count) & (position != int(len(self.board)/2)):
                 if self.board[position] == "-":
-
                     temp_board = self.board
                     temp_board[position] = "#"
                     temp_xw = "".join(temp_board)
@@ -68,15 +61,14 @@ class Crossword():
                     temp_xw = "".join(list(temp_xw[0]))
                     #temp_xw = self.add_blocked_char(temp_xw, self.col_max + 2)
                     if self.is_legal(temp_xw):
-                        print("2", position)
+                        print("wgwgwgewegwegwegwegegwgewgewegwg")
+                  #      print("2", position)
                         self.board[position] = "#"
                         xw = temp_xw
                         self.board = list(xw)
                         num_blocked = xw.count("#")
-
         print("added blocked spaces")
         print_board(xw, self.col_max + 2)
-
         letters = list(letters)
         for i in range(len(self.board)):
             if letters[i].isalpha():
@@ -84,78 +76,74 @@ class Crossword():
             if self.board[i] == PROTECTEDCHAR:
                 self.board[i] = OPENCHAR
         xw = "".join(self.board)
+        print("FINAL:", self.check_connectivity(xw))
         print_board(xw, self.col_max + 2)
-        self.board=list(xw)
+        self.board = list(xw)
 
     def is_legal(self, xw):
         if xw.find("#-#") >= 0:
-            print("not legal 1", xw)
+            #print("not legal 1", xw)
             return False
         if xw.find("#--#") >= 0:
-            print("not legal 2")
+            #print("not legal 2")
             return False
         if xw.find("#~-#") >= 0:
-            print("not legal 3")
+            #print("not legal 3")
             return False
         if xw.find("#-~#") >= 0:
-            print("not legal 4")
+            #print("not legal 4")
             return False
         if xw.find("#~#") >= 0:
-            print("not legal 5")
+            #print("not legal 5")
             return False
         if xw.find("#~~#") >= 0:
-            print("not legal 6", xw)
+            #print("not legal 6", xw)
             return False
         xw = self.transpose(xw, self.col_max+2)
         if xw.find("#-#") >= 0:
-            print("not legal 7")
+            #print("not legal 7")
             return False
         if xw.find("#--#") >= 0:
-            print("not legal 8")
+            #print("not legal 8")
             return False
         if xw.find("#~-#") >= 0:
-            print("not legal 9", xw)
+            #print("not legal 9", xw)
             return False
         if xw.find("#-~#") >= 0:
-            print("not legal 10")
+            #print("not legal 10")
             return False
         if xw.find("#~#") >= 0:
-            print("not legal 11")
+            #print("not legal 11")
             return False
         if xw.find("#~~#") >= 0:
-            print("not legal 12")
+            #print("not legal 12")
             return False
         return True
-
+        #return self.check_connectivity(xw)
 
     def add_protected_char(self, board, width):
-
         tempboard = list(board)
         for i in range(len(tempboard)):
             if "".join(tempboard[i]).isalpha():
                 tempboard[i] = PROTECTEDCHAR
         board = self.make_palindrome(tempboard)
         board = "".join(list(board[0]))
-
         originalboard = board
         fixboard = True
         while fixboard:
             board = board.replace("#~-", "#~~")
             board = board.replace("-~#", "~~#")
             board = board.replace("#~~-", "#~~~")
-            board = board.replace("#-~-", "#-~~")
+            board = board.replace("#-~-", "#~~~")
             board = board.replace("-~~#", "~~~#")
-            board = board.replace("-~-#", "~~-#")
+            board = board.replace("-~-#", "~~~#")
             board = self.make_palindrome(board)
             board = "".join(list(board[0]))
-
             fixboard = not (originalboard == board)
             originalboard = board
-
         return board
 
     def add_blocked_char(self, board, width):
-
         originalboard = board
         fixboard = True
         while fixboard:
@@ -169,40 +157,52 @@ class Crossword():
             board = self.make_palindrome(board)
             board = "".join(list(board[0]))
             board = self.transpose(board, self.row_max+2)
-
             fixboard = not (originalboard == board)
             originalboard = board
-
         return board
 
+    '''def add_helper(board, num_of_blocks, curr_num_of_blocks):
+        if num_of_blocks == curr_num_of_blocks:  # DONE!
+            return board, num_of_blocks
+        if TBD
+            board = board[0:pos] + BLOCKCHAR + board[pos+1:]
+            new_board = update_the_board_TBD
+            if not_legal(new_board):
+                board = board[0:pos] + OPENCHAR + board[pos+1:]
+            else:
+                board = new_board
+        return add_helper(board, num_of_blocks, curr_num_of_blocks)'''
 
     def check_connectivity(self, board):
         start = board.index(OPENCHAR)
         if start < 0:
             start = board.index(PROTECTEDCHAR)
-        flood_filled = self.connectivity_helper(start, board, [], [])
+        if start < 0:
+            return True
+        print("connectivity", start, board[start])
+        print_board(board, self.col_max + 2)
+        flood_filled = self.connectivity_helper(start, board, [], [])[0]
         return len(flood_filled) == (board.count(OPENCHAR) + board.count(PROTECTEDCHAR))
 
     def adjacents(self, space, explored):
         ret = []
-        temp = [space + 1, space - 1, space + self.row_max, space - self.row_max]
+        temp = [space + 1, space - 1, space + self.row_max+2, space - self.row_max+2]
         for i in temp:
             if i not in explored:
                 ret.append(i)
+#        print(temp, explored, ret)
         return ret
 
     def connectivity_helper(self, space, board, connected, explored):
+        explored.append(space)
         if (board[space] == OPENCHAR) or (board[space] == PROTECTEDCHAR):
             connected.append(space)
             for temp_space in self.adjacents(space, explored):
-                connected.append(self.connectivity_helper(temp_space, board, connected, explored))
-            return connected
-
-    def index_to_coordinates(self, index):
-        return [index / self.row_max, index % self.col_max]
-
-    def check_legal(self, moved_board):
-        return self.make_palindrome(moved_board)[1]
+                temp_search = self.connectivity_helper(temp_space, board, connected, explored)
+                if temp_search is not None:
+                    connected.append(temp_search[0])
+                    explored.append(temp_search[1])
+        return [connected, explored]
 
     def make_palindrome(self, temp_board):  # check if it properly captures middle
         works = True
@@ -222,15 +222,6 @@ class Crossword():
                     board[i_mirror] = board[i]
         return [board, works]
 
-    def coordinates_to_index(self, row_num, col_num):
-        return row_num * self.col_max + col_num
-
-    def display(self, temp_board):
-        clean_board = self.clean_protected(temp_board)
-        for row in range(self.row_max):
-            print(clean_board[(row * self.col_max):(row * self.col_max + self.col_max)])
-            print()
-
     def clean_protected(self, temp_board):
         board_list = list(temp_board)
         for i in board_list:
@@ -243,7 +234,7 @@ def main():
     intTest = [r"^(\d+)x(\d+)$", r"^\d+$", r"^(H|V|h|v)(\d+)x(\d+)(.+)$"]
     user_input = sys.argv
     for i in range(len(user_input)):
-        print(i, user_input[i])
+       print(i, user_input[i])
     initial_words_list = []
     initial_values = []
     for i in range(1, len(user_input)):
