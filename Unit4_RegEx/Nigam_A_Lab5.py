@@ -33,7 +33,6 @@ class Crossword():
     def set_initial(self, initial, blocked_square_count):
         for i in range(len(initial)):
             self.board[initial[i][0]] = initial[i][1]
-
         xword = "".join(self.board)
         xw = BLOCKCHAR * (self.col_max + 3)
         xw += (BLOCKCHAR * 2).join(xword[p:p + self.col_max] for p in range(0, len(xword), self.col_max))
@@ -51,7 +50,8 @@ class Crossword():
             xw = xw[0:((len(xw) // 2))] + BLOCKCHAR + xw[((len(xw) // 2) + 1):]
         blocked_square_count = blocked_square_count + (self.col_max + self.row_max + 2) * 2
         illegalRegex = "[{}](.?[{}] | [{}].?)[{}]".format(BLOCKCHAR, PROTECTEDCHAR, PROTECTEDCHAR, BLOCKCHAR)
-        if re.search(illegalRegex, xw): return xword, len(xword)
+        if re.search(illegalRegex, xw):
+            return xword, len(xword)
         substituteRegex = "[{}]{}(?=[{}])".format(BLOCKCHAR, OPENCHAR, BLOCKCHAR)
         subRE2 = "[{}]{}{}(?=[{}])".format(BLOCKCHAR, OPENCHAR, OPENCHAR, BLOCKCHAR)
         newH = len(xw) // (self.col_max + 2)
@@ -60,6 +60,7 @@ class Crossword():
             xw = re.sub(subRE2, BLOCKCHAR * 3, xw)
             xw = self.transpose(xw, len(xw) // newH)
             newH = len(xw) // newH
+        print_board(xw, self.col_max + 2)
         xw = self.add_blocked_char(xw, self.col_max + 2)
         print("Updated Board to work")
         print_board(xw, self.col_max + 2)
@@ -84,7 +85,6 @@ class Crossword():
                         num_blocked = xw.count("#")'''
         badpositions = {-1}
         pos_list = [x for x in range(len(xw)) if xw[x] == OPENCHAR and xw[len(xw) - x - 1] == OPENCHAR]
-
         for i in range(len(xw)):
             if xw[i] == PROTECTEDCHAR:
                 badpositions.add(i)
@@ -130,7 +130,6 @@ class Crossword():
     def add_blocked_char(self, board, width):
         originalboard = board
         fixboard = True
-
         # while fixboard:
         for i in range(len(board)):
             board = board.replace("#-#", "###")
@@ -150,7 +149,13 @@ class Crossword():
     def add_helper(self, board, num_of_blocks, curr_num_of_blocks, badpositions, poslist):
         if num_of_blocks == curr_num_of_blocks:  # DONE!
             return board, num_of_blocks
-        pick = random.randint(0, len(poslist) - 1)
+        if len(poslist) == 1:
+            pick = 0
+        elif len(poslist) == 0:
+            return board, num_of_blocks
+        else:
+            print("p", poslist)
+            pick = random.randint(0, len(poslist) - 1)
         position = poslist[pick]
         poslist = poslist[0:pick] + poslist[pick + 1:]
         board = board[0:position] + BLOCKCHAR + board[position + 1:]
@@ -165,6 +170,8 @@ class Crossword():
             xw = re.sub(subRE2, BLOCKCHAR * 3, xw)
             xw = self.transpose(xw, len(xw) // newH)
             newH = len(xw) // newH
+        print("FWEeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+        print_board(xw, self.col_max + 2)
         xw = self.add_blocked_char(xw, self.col_max + 2)
         # print("Updated Board (new) to work")
         # print_board(xw, self.col_max + 2)
