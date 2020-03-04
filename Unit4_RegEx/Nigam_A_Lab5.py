@@ -9,275 +9,200 @@ OPENCHAR = "-"
 PROTECTEDCHAR = "~"
 
 
-def print_board(board, width):
-    row = []
-    for i in range(width, len(board) - width):
-        row.append(board[i])
-        if (i + 1) % width == 0:
-            print("".join(row)[1: width - 1])
-            row = []
-    print()
-    time.sleep(.33)
-
-
 class Crossword():
     def __init__(self, height, width):
-        self.row_max = height
-        self.col_max = width
-        self.length = self.row_max * self.col_max
-        self.board = [OPENCHAR] * (height * width)
+        self.height = height
+        self.width = width
+        self.board = [OPENCHAR] * (self.height * self.width)
+        self.length = len(self.board)
 
-    def transpose(self, xw, current_width):
-        return "".join([xw[col::current_width] for col in range(current_width)])
-
-    def set_initial(self, initial, blocked_square_count):
-        for i in range(len(initial)):
-            self.board[initial[i][0]] = initial[i][1]
-        xword = "".join(self.board)
-        xw = BLOCKCHAR * (self.col_max + 3)
-        xw += (BLOCKCHAR * 2).join(xword[p:p + self.col_max] for p in range(0, len(xword), self.col_max))
-        xw += BLOCKCHAR * (self.col_max + 3)
-        print("Initial board w. border")
-        print_board(xw, self.col_max + 2)
-        letters = xw
-        xw = self.add_protected_char(xw, self.col_max + 2)
-        print("added protected")
-        print_board(xw, self.col_max + 2)
-        # Try until number of blocked spaces = target
-        if self.row_max * self.col_max == blocked_square_count:
-            xw = BLOCKCHAR * len(xw)
-        elif blocked_square_count % 2 == 1:
+    def addblock(self, xw, blocked_goal, level=0):
+        blocked_so_far = xw.count(BLOCKCHAR)
+        if blocked_so_far >= blocked_goal:
+            if self.is_valid(xw):
+                return xw
+            else:
+                return ""
+        if blocked_goal % 2 != 0:
             xw = xw[0:((len(xw) // 2))] + BLOCKCHAR + xw[((len(xw) // 2) + 1):]
-        blocked_square_count = blocked_square_count + (self.col_max + self.row_max + 2) * 2
-        illegalRegex = "[{}](.?[{}] | [{}].?)[{}]".format(BLOCKCHAR, PROTECTEDCHAR, PROTECTEDCHAR, BLOCKCHAR)
-        if re.search(illegalRegex, xw):
-            return xword, len(xword)
-        substituteRegex = "[{}]{}(?=[{}])".format(BLOCKCHAR, OPENCHAR, BLOCKCHAR)
-        subRE2 = "[{}]{}{}(?=[{}])".format(BLOCKCHAR, OPENCHAR, OPENCHAR, BLOCKCHAR)
-        newH = len(xw) // (self.col_max + 2)
-        for counter in range(2):
-            xw = re.sub(substituteRegex, BLOCKCHAR * 2, xw)
-            xw = re.sub(subRE2, BLOCKCHAR * 3, xw)
-            xw = self.transpose(xw, len(xw) // newH)
-            newH = len(xw) // newH
-        print_board(xw, self.col_max + 2)
-        xw = self.add_blocked_char(xw, self.col_max + 2)
-        print("Updated Board to work")
-        print_board(xw, self.col_max + 2)
-        '''num_blocked = xw.count(BLOCKCHAR)
-        board_len = len(self.board)
-        for position in range(len(self.board)):
-            self.board = list(xw)
-            #position = random.randint(self.col_max+4, board_len - self.col_max - 4)
-            if (num_blocked < blocked_square_count) & (position != (len(self.board)//2)):
-                if self.board[position] == "-":
-                    temp_board = self.board
-                    temp_board[position] = "#"
-                    temp_xw = "".join(temp_board)
-                    temp_xw = self.make_palindrome(temp_xw)
-                    temp_xw = "".join(list(temp_xw[0]))
-                    #temp_xw = self.add_blocked_char(temp_xw, self.col_max + 2)
-                    if self.is_legal(temp_xw):
-                  #      print("2", position)
-                        self.board[position] = "#"
-                        xw = temp_xw
-                        self.board = list(xw)
-                        num_blocked = xw.count("#")'''
-        badpositions = {-1}
-        pos_list = [x for x in range(len(xw)) if xw[x] == OPENCHAR and xw[len(xw) - x - 1] == OPENCHAR]
+            if blocked_goal == 1:
+                return xw
+        elif blocked_goal == ((self.width+2)*(self.height+2)):
+            return BLOCKCHAR*((self.width+2)*(self.height+2))
+
+        pick_from = []
         for i in range(len(xw)):
-            if xw[i] == PROTECTEDCHAR:
-                badpositions.add(i)
-            elif xw[i] == BLOCKCHAR:
-                badpositions.add(i)
-        xw = self.add_helper(xw, blocked_square_count, xw.count(BLOCKCHAR), badpositions, pos_list)[0]
-        print("added blocked spaces", xw.count(BLOCKCHAR), blocked_square_count)
-        print_board(xw, self.col_max + 2)
-        self.board = list(xw)
-        letters = list(letters)
-        for i in range(len(letters)):
-            if letters[i].isalpha():
-                self.board[i] = letters[i]
-            if self.board[i] == PROTECTEDCHAR:
-                self.board[i] = OPENCHAR
-        xw = "".join(self.board)
-        print("FINAL:", self.check_connectivity(xw,1))
-        print_board(xw, self.col_max + 2)
-        self.board = list(xw)
+            if (xw[i] != BLOCKCHAR) and (xw[i] != PROTECTEDCHAR):
+                pick_from.append(i)
+        if len(xw)//2 in pick_from:
+            pick_from.remove(len(xw)//2)
 
-    def add_protected_char(self, board, width):
-        tempboard = list(board)
-        for i in range(len(tempboard)):
-            if "".join(tempboard[i]).isalpha():
-                tempboard[i] = PROTECTEDCHAR
-        board = self.make_palindrome(tempboard)
-        board = "".join(list(board[0]))
-        originalboard = board
-        fixboard = True
-        while fixboard:
-            board = board.replace("#~-", "#~~")
-            board = board.replace("-~#", "~~#")
-            board = board.replace("#~~-", "#~~~")
-            board = board.replace("#-~-", "#~~~")
-            board = board.replace("-~~#", "~~~#")
-            board = board.replace("-~-#", "~~~#")
-            board = self.make_palindrome(board)
-            board = "".join(list(board[0]))
-            fixboard = not (originalboard == board)
-            originalboard = board
-        return board
 
-    def add_blocked_char(self, board, width):
-        originalboard = board
-        fixboard = True
-        # while fixboard:
-        for i in range(len(board)):
-            board = board.replace("#-#", "###")
-            board = board.replace("#--#", "####")
-            board = self.make_palindrome(board)
-            board = "".join(list(board[0]))
-            board = self.transpose(board, self.col_max + 2)
-            board = board.replace("#-#", "###")
-            board = board.replace("#--#", "####")
-            board = self.make_palindrome(board)
-            board = "".join(list(board[0]))
-            board = self.transpose(board, self.row_max + 2)
-            fixboard = not (originalboard == board)
-            originalboard = board
-        return board
+        for i in range(len(pick_from)):
+            # place two blocks
+            tempxw = xw
+            xw = xw[0:pick_from[i]] + BLOCKCHAR + xw[pick_from[i] + 1:]
+            xw = xw[0:len(xw) - 1 - pick_from[i]] + BLOCKCHAR + xw[len(xw) - pick_from[i]:]
+            newH = len(xw) // (self.width + 2)
+            for counter in range(2):
+                xw = re.sub("[#]-(?=[#])", "##", xw)
+                xw = re.sub("[#]--(?=[#])", "###", xw)
+                xw = self.transpose(xw, len(xw) // newH)
+                newH = len(xw) // newH
 
-    def add_helper(self, board, num_of_blocks, curr_num_of_blocks, badpositions, poslist):
-        if num_of_blocks == curr_num_of_blocks:  # DONE!
-            return board, num_of_blocks
-        if len(poslist) == 1:
-            pick = 0
-        elif len(poslist) == 0:
-            return board, num_of_blocks
-        else:
-            print("p", poslist)
-            pick = random.randint(0, len(poslist) - 1)
-        position = poslist[pick]
-        poslist = poslist[0:pick] + poslist[pick + 1:]
-        board = board[0:position] + BLOCKCHAR + board[position + 1:]
-        xw = board
-        illegalRegex = "[#](.?[~]|[~].?)[#]"
-        if re.search(illegalRegex, xw): return xw, len(xw)
-        substituteRegex = "[#]-(?=[#])"
-        subRE2 = "[#]--(?=[#])".format(BLOCKCHAR, OPENCHAR, OPENCHAR, BLOCKCHAR)
-        newH = len(xw) // (self.col_max + 2)
+            # Block Fill
+            start = xw.find(OPENCHAR)
+            areafilled = self.area_fill(xw, start)
+            if areafilled.count(OPENCHAR) > 0:
+                for i in range(len(areafilled)):
+                    if areafilled[i] == OPENCHAR:
+                        xw = xw[0:i] + BLOCKCHAR + xw[i + 1:]
+
+            if (re.search("[#](.?[~]|[~].?)[#]", xw) is None) and (re.search("[#](.?[~]|[~].?)[#]", self.transpose(xw, len(xw) // newH)) is None):
+
+                if xw.count(BLOCKCHAR) <= blocked_goal:
+                    ret = ""
+                    if xw.count("#--#") == 0 and xw.count("#-#") == 0:
+                        ret = self.addblock(xw, blocked_goal, level+1)
+                    elif xw.count(BLOCKCHAR) <= blocked_goal-6:
+                        xw = xw.replace("#---", "####", 1)
+                        xw = xw.replace("---#","####", 1)
+                        for counter in range(2):
+                            xw = re.sub("[#]-(?=[#])", "##", xw)
+                            xw = re.sub("[#]--(?=[#])", "###", xw)
+                            xw = self.transpose(xw, len(xw) // newH)
+                            newH = len(xw) // newH
+                            ret = self.addblock(xw, blocked_goal, level + 1)
+
+                        if ret != "":
+                            return ret
+                    if ret != "":
+                        return ret
+            xw = tempxw
+
+        print("Add block 2 failed")
+        return ""
+
+
+    def add_border(self, xw):
+        ret = BLOCKCHAR * (self.width + 2)
+        for i in range(self.height):
+            ret += BLOCKCHAR
+            ret += ''.join(xw[(self.width * i):(self.width * i + self.width)])
+            ret += BLOCKCHAR
+        ret += BLOCKCHAR * (self.width + 2)
+        return ret
+
+    def add_protected(self, xw):
+        xw = list(xw)
+        for i in range(len(xw)):
+            if xw[i] != BLOCKCHAR and xw[i] != OPENCHAR:
+                xw[i] = PROTECTEDCHAR
+
+        xw = ''.join(xw)
+        xw = self.make_palindrome(xw)
+
+        newH = len(xw) // (self.width + 2)
         for counter in range(2):
-            xw = re.sub(substituteRegex, BLOCKCHAR * 2, xw)
-            xw = re.sub(subRE2, BLOCKCHAR * 3, xw)
+            xw = re.sub("#((~--)|(-~-)|(--~)|(~~-)|(-~~))", "#~~~", xw)
+            xw = re.sub("((~--)|(-~-)|(--~)|(~~-)|(-~~))#", "~~~#", xw)
+
+            xw = re.sub("[#]-(?=[#])", "##", xw)
+            xw = re.sub("[#]--(?=[#])", "###", xw)
+
             xw = self.transpose(xw, len(xw) // newH)
             newH = len(xw) // newH
-        print("FWEeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
-        print_board(xw, self.col_max + 2)
-        xw = self.add_blocked_char(xw, self.col_max + 2)
-        # print("Updated Board (new) to work")
-        # print_board(xw, self.col_max + 2)
-        if not self.is_legal_board(xw):
-            print("backtracting from", position)
-            board = board[0:position] + OPENCHAR + board[position + 1:]
-            board = self.add_helper(board, num_of_blocks, curr_num_of_blocks, badpositions, poslist)[0]
-        else:
-            board = xw
 
-        curr_num_of_blocks = board.count(BLOCKCHAR)
-        return self.add_helper(board, num_of_blocks, curr_num_of_blocks, badpositions, poslist)
-
-    def is_legal_board(self, xw):
-        if xw.find("#~#") >= 0:
-            # print("not legal 1", xw)
-            return False
-        '''if xw.find("#--#") >= 0:
-            #print("not legal 2")
-            return False'''
-        if xw.find("#~-#") >= 0:
-            # print("not legal 3")
-            return False
-        if xw.find("#-~#") >= 0:
-            # print("not legal 4")
-            return False
-        if xw.find("#~#") >= 0:
-            # print("not legal 5")
-            return False
-        if xw.find("#~~#") >= 0:
-            # print("not legal 6", xw)
-            return False
-        xw = self.transpose(xw, self.col_max + 2)
-        '''if xw.find("#-#") >= 0:
-            #print("not legal 7")
-            return False
-        if xw.find("#--#") >= 0:
-            #print("not legal 8")
-            return False'''
-        if xw.find("#~-#") >= 0:
-            # print("not legal 9", xw)
-            return False
-        if xw.find("#-~#") >= 0:
-            # print("not legal 10")
-            return False
-        if xw.find("#~#") >= 0:
-            # print("not legal 11")
-            return False
-        if xw.find("#~~#") >= 0:
-            # print("not legal 12")
-            return False
-        # return True
-        return self.check_connectivity(xw)
+        xw = self.make_palindrome(xw)
+        return xw
 
     def area_fill(self, board, sp):
-        dirs = [-1, self.col_max + 2, 1, -1 * (self.col_max + 2)]
-        if sp < 0 or sp >= len(board):
-            return board
+        if sp < 0 or sp >= len(board): return board
         if board[sp] in {OPENCHAR, PROTECTEDCHAR}:
             board = board[0:sp] + '?' + board[sp + 1:]
+            width = self.width + 2
+            dirs = [-1, width, 1, -1 * width]
             for d in dirs:
-                if d == -1 & sp % (self.col_max + 2) == 0:
-                    continue
-                if d == 1 & (sp + 1) % (self.col_max + 2) == 0:
-                    continue
+                if d == -1 and sp % width == 0: continue  # left edge
+                if d == 1 and sp + 1 % width == 0: continue  # right edge
                 board = self.area_fill(board, sp + d)
         return board
 
-    def check_connectivity(self, board, flag=0):
-        try:
-            start = board.index(OPENCHAR)
-        except ValueError:
-            try:
-                start = board.index(PROTECTEDCHAR)
-            except ValueError:
-                return True
-        if flag == 1:
-            print_board(self.area_fill(board, start),self.col_max)
-        return self.area_fill(board, start).count("?") == (board.count(OPENCHAR) + board.count(PROTECTEDCHAR))
 
-    def make_palindrome(self, temp_board):  # check if it properly captures middle
-        works = True
-        board = list(temp_board)
-        board_length = len(board)
-        for i in range(board_length):
-            i_mirror = board_length - i - 1
-            if board[i] == BLOCKCHAR:
-                if board[i_mirror] == PROTECTEDCHAR:
-                    works = False
-                else:
-                    board[i_mirror] = board[i]
-            elif board[i] == PROTECTEDCHAR:
-                if board[i_mirror] == BLOCKCHAR:
-                    works = False
-                else:
-                    board[i_mirror] = board[i]
-        if not works:
-            print("****Make Palindrome failed****")
-        return [board, works]
+    def check_connectivity(self, xw):
+        start = xw.find(OPENCHAR)
+        xw = self.area_fill(xw,start)
+        ret = xw.count(OPENCHAR) == 0
+        print("check connectivity=", ret)
+        return True
+        return xw.count(OPENCHAR) == len(self.connectivity_helper(start, xw, set(), set()))
 
-    def clean_protected(self, temp_board):
-        board_list = list(temp_board)
-        for i in board_list:
-            if board_list[i] == PROTECTEDCHAR:
-                board_list[i] = OPENCHAR
-        return ''.join(board_list)
+    def is_valid(self, xw):
+
+        xw = xw.replace(PROTECTEDCHAR, OPENCHAR)
+        if xw.count("#--#") > 0 or xw.count("#-#") > 0:
+            return False
+        temp = self.transpose(xw, self.width+2)
+        if temp.count("#--#") > 0 or temp.count("#-#") > 0:
+            return False
+        return self.check_connectivity(xw)
+
+    def make_palindrome(self, xw):
+        xw = list(xw)
+        length = len(xw) - 1
+        for i in range(length):
+            if xw[i] == PROTECTEDCHAR:
+                xw[length - i] = PROTECTEDCHAR
+            elif xw[i] == BLOCKCHAR:
+                xw[length - i] = BLOCKCHAR
+        return ''.join(xw)
+
+    def print_board(self, board, additional_thickness=2):
+        for i in range(self.height + additional_thickness):
+            print(board[((self.width + additional_thickness) * i):((self.width + additional_thickness) * (i + 1))])
+        print()
+
+    def print_board2(self, board, additional_thickness=2):
+        for i in range(self.width + additional_thickness):
+            print(board[((self.height + additional_thickness) * i):((self.height + additional_thickness) * (i + 1))])
+        print()
+
+    def set_initial(self, initial_values, blocked_goal):
+        xw = self.board
+        xw = list(xw)
+        for i in initial_values:
+            xw[i[0]] = i[1]
+        xw = ''.join(xw)
+        xw = self.add_border(xw)
+        xw = self.add_protected(xw)
+
+        xw = self.addblock(xw, blocked_goal+((self.width+self.height+2)*2))
+
+        xw = list(xw)
+        for i in initial_values:
+            xw[((i[0]//self.width)+1)*(self.width+2)+(1+i[0]%self.width)] = i[1]
+        xw = ''.join(xw)
+        xw = xw.replace(PROTECTEDCHAR, OPENCHAR)
+        print("added letters back + openchar")
+        self.print_board(xw)
+
+        xw = xw[(self.width + 2):(len(xw) - (self.width + 2))]
+        ret = ""
+        for i in range(self.height):
+            ret += xw[(1 + i * (self.width + 2)):(self.width + 1 + i * (self.width + 2))]
+        self.print_board(ret, 0)
+        self.board = list(ret)
+
+    def transpose(self, xw, width):
+        height = len(xw)//(width)
+        temp = [0]*len(xw)
+        xw = list(xw)
+        for i in range(len(xw)):
+            x = i // (width)
+            y = i % (width)
+            temp[int((y * height) + x)] = xw[i]
+
+        return ''.join(temp)
 
 
 def main():
@@ -285,7 +210,6 @@ def main():
     user_input = sys.argv
     for i in range(len(user_input)):
         print(i, user_input[i])
-    initial_words_list = []
     initial_values = []
     for i in range(1, len(user_input)):
         if re.match(intTest[0], user_input[i]):  # board size
@@ -303,12 +227,15 @@ def main():
             word = result.group(4)
             if is_vertical:
                 for j in range(len(word)):
+                    board_pos = width + 2 + (start_index[1] + 1) + (start_index[0] + j) * (width + 2)
                     board_pos = (start_index[0] + j) * width + start_index[1]
                     initial_values.append([board_pos, word[j]])
             else:
                 for j in range(len(word)):
-                    board_pos = (start_index[0]) * width + start_index[1] + j
+                    board_pos = width + 2 + (start_index[1] + j) + (start_index[0] + 1) * (width + 2)
+                    board_pos = (start_index[0] * width) + start_index[1] + j
                     initial_values.append([board_pos, word[j]])
+
     print("size, block count [", height, "x", width, "] ", blocked_square_count)
     puzzle = Crossword(height, width)
     puzzle.set_initial(initial_values, blocked_square_count)
