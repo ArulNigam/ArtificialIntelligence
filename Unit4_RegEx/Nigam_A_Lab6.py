@@ -2,349 +2,440 @@
 # Period 3
 # Crossword Pt. 1
 
-import os, random, re, sys, time
+import os, re, sys, time, random, queue
 
 BLOCKCHAR = '#'
 OPENCHAR = "-"
 PROTECTEDCHAR = "~"
 
 
-def print_board(board, width):
-    row = []
-    for i in range(width, len(board) - width):
-        row.append(board[i])
-        if (i + 1) % width == 0:
-            print("".join(row)[1: width - 1])
-            row = []
-    print()
-
-
-class Crossword():
+class Crossword:
     def __init__(self, height, width):
-        self.row_max = height
-        self.col_max = width
-        self.length = self.row_max * self.col_max
-        self.board = [OPENCHAR] * (height * width)
+        self.height = height
+        self.width = width
+        self.board = [OPENCHAR] * (self.height * self.width)
+        self.length = len(self.board)
 
-    def transpose(self, xw, current_width):
-        return "".join([xw[col::current_width] for col in range(current_width)])
+    def addblock(self, xw, blocked_goal, level=0):
+        blocked_so_far = xw.count(BLOCKCHAR)
+        if blocked_so_far >= blocked_goal:
+            if self.is_valid(xw):
+                return xw
+            return ""
+        if blocked_goal % 2 != 0:
+            xw = xw[0:(len(xw) // 2)] + BLOCKCHAR + xw[((len(xw) // 2) + 1):]
+            if blocked_goal == 1:
+                return xw
+        elif blocked_goal == ((self.width + 2) * (self.height + 2)):
+            return BLOCKCHAR * ((self.width + 2) * (self.height + 2))
 
-    def set_initial(self, initial, blocked_square_count):
-        for i in range(len(initial)):
-            self.board[initial[i][0]] = initial[i][1]
-        print("Initial input")
-        print_board(self.board, self.col_max)
-        xword = "".join(self.board)
-        xw = BLOCKCHAR * (self.col_max + 3)
-        xw += (BLOCKCHAR * 2).join(xword[p:p + self.col_max] for p in range(0, len(xword), self.col_max))
-        xw += BLOCKCHAR * (self.col_max + 3)
-        print("Added border")
-        print_board(xw, self.col_max + 2)
-        letters = xw
-        xw = self.add_protected_char(xw, self.col_max + 2)
+        pick_from = []
+        for i in range(len(xw)):
+            if (xw[i] != BLOCKCHAR) and (xw[i] != PROTECTEDCHAR):
+                pick_from.append(i)
+        if len(xw) // 2 in pick_from:
+            pick_from.remove(len(xw) // 2)
 
-        print("added protected")
-        print_board(xw, self.col_max + 2)
+        for i in range(len(pick_from)):
+            # place two blocks
+            tempxw = xw
+            xw = xw[0:pick_from[i]] + BLOCKCHAR + xw[pick_from[i] + 1:]
+            xw = xw[0:len(xw) - 1 - pick_from[i]] + BLOCKCHAR + xw[len(xw) -
+                                                                   pick_from[
+                                                                       i]:]
+            newH = len(xw) // (self.width + 2)
+            for counter in range(2):
+                xw = re.sub("[#]-(?=[#])", "##", xw)
+                xw = re.sub("[#]--(?=[#])", "###", xw)
+                xw = self.transpose(xw, len(xw) // newH)
+                newH = len(xw) // newH
 
-        # Try until number of blocked spaces = target
+            # Block Fill
+            start = xw.find(OPENCHAR)
+            areafilled = self.area_fill(xw, start)
+            if areafilled.count(OPENCHAR) > 0:
+                for j in range(len(areafilled)):
+                    if areafilled[j] == OPENCHAR:
+                        xw = xw[0:j] + BLOCKCHAR + xw[j + 1:]
 
-        xw = self.add_blocked_char(xw, self.col_max + 2)
-        num_blocked = xw.count("#")
-        board_len = len(self.board)
+            if (re.search("[#](.?[~]|[~].?)[#]", xw) is None) and (
+                    re.search("[#](.?[~]|[~].?)[#]",
+                              self.transpose(xw, len(xw) // newH)) is None):
 
-        for position in range(len(self.board)):
-            self.board = list(xw)
-            if blocked_square_count % 2 == 1:
-                self.board[int(len(self.board) / 2)] = "#"
+                if xw.count(BLOCKCHAR) <= blocked_goal:
+                    ret = ""
+                    if xw.count("#--#") == 0 and xw.count("#-#") == 0:
+                        ret = self.addblock(xw, blocked_goal, level + 1)
+                    elif xw.count(BLOCKCHAR) <= blocked_goal - 6:
+                        xw = xw.replace("#---", "####", 1)
+                        xw = xw.replace("---#", "####", 1)
+                        for counter in range(2):
+                            xw = re.sub("[#]-(?=[#])", "##", xw)
+                            xw = re.sub("[#]--(?=[#])", "###", xw)
+                            xw = self.transpose(xw, len(xw) // newH)
+                            newH = len(xw) // newH
+                            ret = self.addblock(xw, blocked_goal, level + 1)
 
-            # position = random.randint(self.col_max+4, board_len - self.col_max - 4)
-            if (num_blocked < blocked_square_count) & (position != int(len(self.board) / 2)):
-                if self.board[position] == "-":
+                        if ret != "":
+                            return ret
+                    if ret != "":
+                        return ret
+            xw = tempxw
 
-                    temp_board = self.board
-                    temp_board[position] = "#"
-                    temp_xw = "".join(temp_board)
-                    temp_xw = self.make_palindrome(temp_xw)
-                    temp_xw = "".join(list(temp_xw[0]))
-                    # temp_xw = self.add_blocked_char(temp_xw, self.col_max + 2)
-                    if self.is_legal(temp_xw):
-                        print("2", position)
-                        self.board[position] = "#"
-                        xw = temp_xw
-                        self.board = list(xw)
-                        num_blocked = xw.count("#")
+        print("Add block 2 failed")
+        return ""
 
-        print("added blocked spaces")
-        print_board(xw, self.col_max + 2)
-
-        letters = list(letters)
-        for i in range(len(self.board)):
-            if letters[i].isalpha():
-                self.board[i] = letters[i]
-            if self.board[i] == PROTECTEDCHAR:
-                self.board[i] = OPENCHAR
-        xw = "".join(self.board)
-        print_board(xw, self.col_max + 2)
-        self.board = list(xw)
-
-    def is_legal(self, xw):
-        if xw.find("#-#") >= 0:
-            print("not legal 1", xw)
-            return False
-        if xw.find("#--#") >= 0:
-            print("not legal 2")
-            return False
-        if xw.find("#~-#") >= 0:
-            print("not legal 3")
-            return False
-        if xw.find("#-~#") >= 0:
-            print("not legal 4")
-            return False
-        if xw.find("#~#") >= 0:
-            print("not legal 5")
-            return False
-        if xw.find("#~~#") >= 0:
-            print("not legal 6", xw)
-            return False
-        xw = self.transpose(xw, self.col_max + 2)
-        if xw.find("#-#") >= 0:
-            print("not legal 7")
-            return False
-        if xw.find("#--#") >= 0:
-            print("not legal 8")
-            return False
-        if xw.find("#~-#") >= 0:
-            print("not legal 9", xw)
-            return False
-        if xw.find("#-~#") >= 0:
-            print("not legal 10")
-            return False
-        if xw.find("#~#") >= 0:
-            print("not legal 11")
-            return False
-        if xw.find("#~~#") >= 0:
-            print("not legal 12")
-            return False
-        return True
-
-    def add_protected_char(self, board, width):
-
-        tempboard = list(board)
-        for i in range(len(tempboard)):
-            if "".join(tempboard[i]).isalpha():
-                tempboard[i] = PROTECTEDCHAR
-        board = self.make_palindrome(tempboard)
-        board = "".join(list(board[0]))
-
-        originalboard = board
-        fixboard = True
-        while fixboard:
-            board = board.replace("#~-", "#~~")
-            board = board.replace("-~#", "~~#")
-            board = board.replace("#~~-", "#~~~")
-            board = board.replace("#-~-", "#-~~")
-            board = board.replace("-~~#", "~~~#")
-            board = board.replace("-~-#", "~~-#")
-            board = self.make_palindrome(board)
-            board = "".join(list(board[0]))
-
-            fixboard = not (originalboard == board)
-            originalboard = board
-
-        return board
-
-    def add_blocked_char(self, board, width):
-
-        originalboard = board
-        fixboard = True
-        while fixboard:
-            board = board.replace("#-#", "###")
-            board = board.replace("#--#", "####")
-            board = self.make_palindrome(board)
-            board = "".join(list(board[0]))
-            board = self.transpose(board, self.col_max + 2)
-            board = board.replace("#-#", "###")
-            board = board.replace("#--#", "####")
-            board = self.make_palindrome(board)
-            board = "".join(list(board[0]))
-            board = self.transpose(board, self.row_max + 2)
-
-            fixboard = not (originalboard == board)
-            originalboard = board
-
-        return board
-
-    def check_connectivity(self, board):
-        start = board.index(OPENCHAR)
-        if start < 0:
-            start = board.index(PROTECTEDCHAR)
-        flood_filled = self.connectivity_helper(start, board, [], [])
-        return len(flood_filled) == (board.count(OPENCHAR) + board.count(PROTECTEDCHAR))
-
-    def adjacents(self, space, explored):
-        ret = []
-        temp = [space + 1, space - 1, space + self.row_max, space - self.row_max]
-        for i in temp:
-            if i not in explored:
-                ret.append(i)
+    def add_border(self, xw):
+        ret = BLOCKCHAR * (self.width + 2)
+        for i in range(self.height):
+            ret += BLOCKCHAR
+            ret += ''.join(xw[(self.width * i):(self.width * i + self.width)])
+            ret += BLOCKCHAR
+        ret += BLOCKCHAR * (self.width + 2)
         return ret
 
-    def connectivity_helper(self, space, board, connected, explored):
-        if (board[space] == OPENCHAR) or (board[space] == PROTECTEDCHAR):
-            connected.append(space)
-            for temp_space in self.adjacents(space, explored):
-                connected.append(self.connectivity_helper(temp_space, board, connected, explored))
-            return connected
+    def add_protected(self, xw):
+        xw = list(xw)
+        for i in range(len(xw)):
+            if xw[i] != BLOCKCHAR and xw[i] != OPENCHAR:
+                xw[i] = PROTECTEDCHAR
 
-    def index_to_coordinates(self, index):
-        return [index / self.row_max, index % self.col_max]
+        xw = ''.join(xw)
+        xw = self.make_palindrome(xw)
 
-    def check_legal(self, moved_board):
-        return self.make_palindrome(moved_board)[1]
+        newH = len(xw) // (self.width + 2)
+        for counter in range(2):
+            xw = re.sub("#((~--)|(-~-)|(--~)|(~~-)|(-~~))", "#~~~", xw)
+            xw = re.sub("((~--)|(-~-)|(--~)|(~~-)|(-~~))#", "~~~#", xw)
 
-    def make_palindrome(self, temp_board):  # check if it properly captures middle
-        works = True
-        board = list(temp_board)
-        board_length = len(board)
-        for i in range(board_length):
-            i_mirror = board_length - i - 1
-            if board[i] == BLOCKCHAR:
-                if board[i_mirror] == PROTECTEDCHAR:
-                    works = False
-                else:
-                    board[i_mirror] = board[i]
-            if board[i] == PROTECTEDCHAR:
-                if board[i_mirror] == BLOCKCHAR:
-                    works = False
-                else:
-                    board[i_mirror] = board[i]
-        return [board, works]
+            xw = re.sub("[#]-(?=[#])", "##", xw)
+            xw = re.sub("[#]--(?=[#])", "###", xw)
 
-    def coordinates_to_index(self, row_num, col_num):
-        return row_num * self.col_max + col_num
+            xw = self.transpose(xw, len(xw) // newH)
+            newH = len(xw) // newH
 
-    def display(self, temp_board):
-        clean_board = self.clean_protected(temp_board)
-        for row in range(self.row_max):
-            print(clean_board[(row * self.col_max):(row * self.col_max + self.col_max)])
-            print()
+        xw = self.make_palindrome(xw)
+        return xw
 
-    def clean_protected(self, temp_board):
-        board_list = list(temp_board)
-        for i in board_list:
-            if board_list[i] == PROTECTEDCHAR:
-                board_list[i] = OPENCHAR
-        return ''.join(board_list)
+    def area_fill(self, board, sp):
+        if sp < 0 or sp >= len(board):
+            return board
+        if board[sp] in {OPENCHAR, PROTECTEDCHAR}:
+            board = board[0:sp] + '?' + board[sp + 1:]
+            width = self.width + 2
+            dirs = [-1, width, 1, -1 * width]
+            for d in dirs:
+                if d == -1 and sp % width == 0:
+                    continue  # left edge
+                if d == 1 and sp + 1 % width == 0:
+                    continue  # right edge
+                board = self.area_fill(board, sp + d)
+        return board
 
+    def check_connectivity(self, xw):
+        start = xw.find(OPENCHAR)
+        xw = self.area_fill(xw, start)
+        return xw.count(OPENCHAR) == 0
 
-def connected_words(xw):
-    connections = {}
-    h_start, h_end, v_start, v_end = -1, -1, -1, -1
-    for i in range(len(xw)):
-        if xw[i] == "-":
-            temp = []
-            next_wall = xw.find("##", i)
-            # HORIZONTAL:
-            x = i + 1
-            while x < next_wall:
-                if xw[x] == OPENCHAR:
-                    temp.append(x)
-                    x += 1
-                else:
-                    break
-            x = i
-            while x > (next_wall - (row_max + 2)):
-                if xw[x] == OPENCHAR:
-                    temp.append(x)
-                    x -= 1
-                else:
-                    break
-            if len(temp) > 0:
-                h_start, h_end = min(temp), max(temp)
-            temp = []
-            # VERTICAL:
-            x = i + (row_max + 2)
-            while x < (col_max + 2):
-                if xw[x] == OPENCHAR:
-                    temp.append(x)
-                    x += (row_max + 2)
-                else:
-                    break
-            x = i - (row_max + 2)
-            while x > (row_max + 2):
-                if xw[x] == OPENCHAR:
-                    temp.append(x)
-                    x -= (row_max + 2)
-                else:
-                    break
-            if len(temp) > 0:
-                v_start, v_end = min(temp), max(temp)
-            connections[i] = [h_start, h_end, v_start, v_end]
-    return connections
+    def is_valid(self, xw):
 
+        xw = xw.replace(PROTECTEDCHAR, OPENCHAR)
+        if xw.count("#--#") > 0 or xw.count("#-#") > 0:
+            return False
+        temp = self.transpose(xw, self.width + 2)
+        if temp.count("#--#") > 0 or temp.count("#-#") > 0:
+            return False
+        return self.check_connectivity(xw)
 
-def fill(guess, start, xw, is_vertical):
-    guess = guess[0]
-    xw = list(xw)
-    if is_vertical:
-        for i in range(len(guess)):
-            xw[start + i * (row_max + 2)] = guess[i]
-    else:  # horizontal
-        for i in range(len(guess)):
-            xw[start + i] = guess[i]
-    return ''.join(xw)
+    def make_palindrome(self, xw):
+        xw = list(xw)
+        length = len(xw) - 1
+        for i in range(length):
+            if xw[i] == PROTECTEDCHAR:
+                xw[length - i] = PROTECTEDCHAR
+            elif xw[i] == BLOCKCHAR:
+                xw[length - i] = BLOCKCHAR
+        return ''.join(xw)
 
+    def print_board(self, board, additional_thickness=2):
+        if board is None:
+            print("Board is none!")
+        else:
+            for i in range(self.height + additional_thickness):
+                print(board[((self.width + additional_thickness) * i):(
+                        (self.width + additional_thickness) * (i + 1))])
+        print()
 
-def find_longest_word(xw):
-    rgx = r'#-+#'
-    horizontal_match = re.search(rgx, xw)
-    if horizontal_match:
-        group = horizontal_match.group()
-        horizontal_start = xw.index(group) + 1
-        horizontal_length = len(group) - 2
-    else:
+    def set_initial(self, initial_values, blocked_goal):
+        xw = self.board
+        xw = list(xw)
+        for i in initial_values:
+            xw[i[0]] = i[1]
+        xw = ''.join(xw)
+        xw = self.add_border(xw)
+        xw = self.add_protected(xw)
+
+        xw = self.addblock(xw,
+                           blocked_goal + ((self.width + self.height + 2) * 2))
+
+        xw = list(xw)
+        for i in initial_values:
+            xw[((i[0] // self.width) + 1) * (self.width + 2) + (
+                    1 + i[0] % self.width)] = i[1]
+        xw = ''.join(xw)
+        xw = xw.replace(PROTECTEDCHAR, OPENCHAR)
+        # print("added letters back + openchar")
+        # self.print_board(xw)
+
+        xw = xw[(self.width + 2):(len(xw) - (self.width + 2))]
+        ret = ""
+        for i in range(self.height):
+            ret += xw[(1 + i * (self.width + 2)):(
+                    self.width + 1 + i * (self.width + 2))]
+        self.board = list(ret)
+
+    def transpose(self, xw, width):
+        height = len(xw) // width
+        temp = [0] * len(xw)
+        xw = list(xw)
+        for i in range(len(xw)):
+            x = i // width
+            y = i % width
+            temp[int((y * height) + x)] = xw[i]
+
+        return ''.join(temp)
+
+    # ****************************************** CLASS: ABOVE = LAB 5, BELOW = LAB 6 ******************************************
+
+    def connected_words(self, xw):
+        arcs = {}
+        connections = {}
+        h_start, h_end, v_start, v_end = -1, -1, -1, -1
+        for i in range(len(xw)):
+            if xw[i] == "-":
+                # HORIZONTAL:
+                h_start = i
+                while xw[h_start - 1] != BLOCKCHAR:
+                    h_start = h_start - 1
+                h_end = i
+                while xw[h_end + 1] != BLOCKCHAR:
+                    h_end = h_end + 1
+                # VERTICAL:
+                v_start = i
+                while xw[v_start - self.width - 2] != BLOCKCHAR:
+                    v_start = v_start - self.width - 2
+                v_end = i
+                while xw[v_end + self.width + 2] != BLOCKCHAR:
+                    v_end = v_end + self.width + 2
+                arcs[i] = [xw[h_start:h_end], xw[v_start:v_end:self.width]]
+                connections[arcs[i][0] + arcs[i][1]] = [h_start, h_end, v_start, v_end]
+        return connections, arcs
+
+    def fill(self, guess, start, xw, is_vertical):
+        guess = guess[0]
+
+        if is_vertical:
+            xw = list(xw)
+            for i in range(len(guess)):
+                xw[start + (i * (self.width + 2))] = guess[i]
+            xw = ''.join(xw)
+        else:  # horizontal
+            xw = xw[0:start] + guess + xw[start + len(guess):]
+
+        return xw
+
+    def find_longest_word(self, xw):
+
         horizontal_start = -1
         horizontal_length = -1
-    xw = transpose(xw, col_max + 2)
-    vertical_match = re.search(rgx, xw)
-    if vertical_match:
-        group = vertical_match.group()
-        vertical_start = len(xw) - (xw.index(group) + 1)  ##################### TRANSPOSE THIS NUM
-        vertical_length = len(group) - 2
-    else:
+        for i in range(self.width, 1, -1):
+            if horizontal_start == -1:
+                rgx = "#[\w-]{}{}{}#".format("{", i, "}")
+                for match in re.finditer(rgx, xw):
+                    horizontal_start = match.start()
+                    e = match.end()
+                    horizontal_length = e - horizontal_start - 2
+                    hgroup = xw[horizontal_start + 1:e - 1]
+                    if hgroup.find("-") == -1:
+                        horizontal_start = -1
+                        horizontal_length = -1
+                    else:
+                        break
+
         vertical_start = -1
         vertical_length = -1
-    if horizontal_length > vertical_length:
-        return horizontal_start, False, horizontal_length
-    return vertical_start, True, vertical_length
+        xw = self.transpose(xw, self.width + 2)
+        for i in range(self.height, 1, -1):
+            if vertical_start == -1:
+                rgx = "#[\w-]{}{}{}#".format("{", i, "}")
+                for match in re.finditer(rgx, xw):
+                    vertical_start = match.start()
+                    # NEED TO TRANSPOSE
+                    e = match.end()
+                    vertical_length = e - vertical_start - 2
+                    vgroup = xw[vertical_start + 1:e - 1]
+                    if vgroup.find("-") == -1:
+                        vertical_start = -1
+                        vertical_length = -1
+                    else:
+                        break
 
+        if horizontal_length >= vertical_length and horizontal_length > 0:
+            return horizontal_start, False, horizontal_length, hgroup
+        elif horizontal_length < vertical_length:
+            x = vertical_start // (self.height + 2)
+            y = vertical_start % (self.height + 2) + 1
+            vertical_start = int(y * (self.width + 2) + x - 1)
+            return vertical_start, True, vertical_length, vgroup
 
-def is_valid(new, old, start, connections, words):
-    for i in range(len(old)):
-        if new[i] != old[i]:  # there is a modification
-            if old[i] != OPENCHAR:  # invalid modification
+        print("Could not find longest word")
+        return vertical_start, True, vertical_length, vgroup
+
+    def solve(self, words_by_length, words):
+        xw = ''.join(self.board)
+        xw = self.add_border(xw)
+        connections, arcs = self.connected_words(xw)
+        xw = self.solve_helper(xw, words_by_length, connections, arcs, words)
+        print("Done Solve")
+        self.print_board(xw)
+        '''xw = xw[(self.width + 2):(len(xw) - (self.width + 2))]
+        ret = ""
+        for i in range(self.height):
+            ret += xw[(1 + i * (self.width + 2)):(
+                    self.width + 1 + i * (self.width + 2))]
+        self.board = list(ret)'''
+        # return ret
+
+    def solve_helper(self, xw, words_by_length, connections, arcs, words):
+        if xw.find(OPENCHAR) < 0:
+            return xw
+        start, is_vertical, length, rgx = self.find_longest_word(xw)
+        print("in solve_helper, with isvert, rgx, board", is_vertical, rgx)
+        # self.print_board(xw)
+        rgx = rgx.replace("-", ".")
+        for guess in words_by_length[length]:
+            ret = None
+            if re.search(rgx, guess[0]):
+                filled = self.fill(guess, start + 1, xw, is_vertical)
+                if self.check_valid(filled, xw, start, connections, arcs, words_by_length):  # word is good
+                    words_by_length[length].remove(
+                        guess)  ###########################################################################################
+                    self.print_board(filled)
+                    ret = self.solve_helper(filled, words_by_length, connections, arcs, words)
+            if ret is not None:
+                # print("found:")
+                # self.print_board(ret)
+                print(ret, "ohsaohsohsaiohs")
+                return ret
+
+    def check_valid(self, new, old, start, connections, arcs, words_by_length):
+        print(arcs)
+        temp = connections[arcs[start + 1][0] + arcs[start + 1][1]]
+        # Trying this for each letter of horizonal word - need to do vertical too
+        for i in range(temp[0], temp[1]):
+            temp2 = connections[arcs[i][0] + arcs[i][1]]
+            word = new[temp2[2]:temp2[3] + (self.width + 2):(self.width + 2)]
+            word = word.replace("-", ".")
+            word_len = len(word)
+            v_match = False
+            for v_l in words_by_length[word_len]:
+                v = v_l[0]
+                if re.search(word, v):
+                    v_match = True
+                    break
+            if not v_match:
                 return False
-    temp = connections[start]
-    if new[temp[0]:temp[1]] not in words:
-        return False
-    if new[temp[2]:temp[3]:(row_max + 2)] not in words:
-        return False
-    return True
+
+        for i in range(temp[2], temp[3] + (self.width + 2), (self.width + 2)):
+            temp2 = connections[arcs[i][0] + arcs[i][1]]
+            word = new[temp2[0]:temp2[1] + 1]
+            word = word.replace("-", ".")
+            word_len = len(word)
+            v_match = False
+            for v_l in words_by_length[word_len]:
+                v = v_l[0]
+                if re.search(word, v):
+                    v_match = True
+                    break
+            if not v_match:
+                return False
+
+        return True
 
 
-def solve(xw, words_by_length, connections, words):
-    return solve_helper(xw, words_by_length, connections, words)
+class CSPSolver:
+    worklist = queue.Queue()  # a queue of arcs (this can be a queue or set in ac-3)
 
+    # arcs: list of tuples
+    # domains: dict of { tuples: list }
+    # constraints: dict of { tuples: list }
+    def __init__(self, arcs: list, domains: dict, constraints: dict):
+        self.arcs = arcs
+        self.domains = domains
+        self.constraints = constraints
 
-def solve_helper(xw, words_by_length, connections, words):
-    if xw.find(OPENCHAR) < 0:
-        return xw
-    start, is_vertical, length = find_longest_word(xw)
-    for guess in words_by_length[length]:
-        filled = fill(guess, start, xw, is_vertical)
-        if is_valid(filled, xw, start, connections, words):
-            print_board(filled, col_max + 4)
-            return solve_helper(filled, words_by_length)
+    # returns an empty dict if an inconsistency is found and domains for variables otherwise
+    # generate: bool (choose whether or not to use a generator)
+    def solve(self, generate=False):
+        result = self.solve_helper()
+        if generate:
+            print("ret", return_value)
+            return result
+        else:
+            return_value = []
+            for step in result:
+                if step == None:
+                    return step  # inconsistency found
+                else:
+                    return_value = step
+            print("ret", return_value)
+            return return_value[1]  # return only the final domain
+
+    # returns a generator for each step in the algorithm, including the end result
+    # each yield is a tuple containing: (edge, new domains, edges to consider)
+    def solve_helper(self):
+        # setup queue with given arcs
+        [self.worklist.put(arc) for arc in self.arcs]
+        # continue working while worklist is not empty
+        while not self.worklist.empty():
+            (xi, xj) = self.worklist.get()
+            if self.revise(xi, xj):
+                if len(self.domains[xi]) == 0:
+                    # found an inconsistency
+                    yield None
+                    break
+                # get all of xj's neighbors
+                neighbors = [neighbor for neighbor in self.arcs if neighbor[0] == xj]
+                # put all neighbors into the worklist to be evaluated
+                [self.worklist.put(neighbor) for neighbor in neighbors]
+                yield (xi, xj), self.domains, neighbors
+            else:
+                yield (xi, xj), self.domains, None
+        # yield the final return value
+        yield None, self.domains, None
+
+    # returns true if and only if the given domain i
+
+    def revise(self, xi: object, xj: object):
+        revised = False
+        # get the domains for xi and xj
+        xi_domain = self.domains[xi]
+        xj_domain = self.domains[xj]
+        # get a list of constraints for (xi, xj)
+        constraints = self.constraints[xi+xj]
+        for x in xi_domain[:]:
+            satisfies = False  # there is a value in xjDomain that satisfies the constraint(s) between xi and xj
+            for y in xj_domain:
+   #             for constraint in constraints:
+                # check y against x for each constraint
+                if x[0][constraints[0]] == y[0][constraints[1]]:
+                    satisfies = True
+                    break
+            if not satisfies:
+                # delete x from xiDomain
+                xi_domain.remove(x)
+                revised = True
+        return revised
 
 
 def sort_by_richness(words, frequency):
@@ -361,25 +452,109 @@ def word_richness(word, frequency):
     return richness
 
 
+def find_horizontal_words(puzzle, xw):
+    horizontal_words = {}
+    word_count = 0
+    while "-" in xw:
+        start = xw.index("-")
+        temp = start + 2
+        while xw[temp + 1] != "#":
+            temp += 1
+        words_list = [i for i in range(start, temp + 1)]
+        horizontal_words["h" + str(word_count)] = [words_list, len(words_list)]
+        word_count += 1
+        xw = xw.replace("-", "*", temp + 1 - start)
+    return horizontal_words
+
+
+def find_vertical_words(puzzle, xw, transposed_table):
+    vertical_words = {}
+    word_count = 0
+    newH = len(xw) // (puzzle.width + 2)
+    xw = puzzle.transpose(xw, len(xw) // newH)
+    length = len(xw)
+    while "-" in xw:
+        start = xw.index("-")
+        temp = start + 2
+        while xw[temp + 1] != "#":
+            temp += 1
+        words_list = [i for i in range(transposed_table[start], transposed_table[temp] + 1, puzzle.width + 2)]
+        vertical_words["v" + str(word_count)] = [words_list, len(words_list)]
+        word_count += 1
+        xw = xw.replace("-", "*", temp + 1 - start)
+    return vertical_words
+
+
+def transposed_table(puzzle, xw):
+    length = len(xw)
+    width = (puzzle.width + 2)
+    height = length // width
+    table = {}
+    for i in range(length):
+        x = i // width
+        y = i % width
+        table[int(y * height) + x] = i
+    return table
+
+
+def find_arc(horizontal_words, vertical_words):
+    arcs = []
+    arc_table = {}
+    for h_word in horizontal_words.keys():
+        for v_word in vertical_words.keys():
+            intersection = set(horizontal_words[h_word][0]).intersection(set(vertical_words[v_word][0]))
+            if len(intersection) == 1:  # words intersect somewhere
+                arcs.append([h_word, v_word])
+                arcs.append([v_word, h_word])
+                space = intersection.pop()
+                arc_table[h_word + v_word] = [horizontal_words[h_word][0].index(space),
+                                              vertical_words[v_word][0].index(space)]
+                arc_table[v_word + h_word] = [vertical_words[v_word][0].index(space),
+                                              horizontal_words[h_word][0].index(space)]
+    return arcs, arc_table
+
+
+def ac3solve(puzzle, words_by_length):
+    xw = ''.join(puzzle.board)
+    xw = puzzle.add_border(xw)
+    domains = {}
+    horiz = find_horizontal_words(puzzle, xw)
+    vert = find_vertical_words(puzzle, xw, transposed_table(puzzle, xw))
+    for h_word in horiz:
+        domains[h_word] = words_by_length[horiz[h_word][1]]
+    for v_word in vert:
+        domains[v_word] = words_by_length[vert[v_word][1]]
+    arcs, constraints = find_arc(horiz, vert)
+    # print(domains)
+    print(arcs)
+    print(constraints)
+    # print(horiz)
+    solver = CSPSolver(arcs, domains, constraints)
+    print(len(domains["h4"]))
+    ret = solver.solve()
+    print(len(solver.domains["h4"]))
+    return ret
+
 def main():
-    intTest = [r"^(\d+)x(\d+)$", r"^\d+$", r"^(H|V|h|v)(\d+)x(\d+)(.+)$"]
+    int_test = [r"^(\d+)x(\d+)$", r"^\d+$", r"^(H|V|h|v)(\d+)x(\d+)(.+)$"]
     user_input = sys.argv
-    for i in range(len(user_input)):
-        print(i, user_input[i])
-    initial_words_list = []
+    for i, v in enumerate(user_input):
+        print(i, v)
     initial_values = []
     for i in range(1, len(user_input)):
-        if re.match(intTest[0], user_input[i]):  # board size
-            result = re.search("^(\d+)x(\d+)$", user_input[i])
+        if re.match(int_test[0], user_input[i]):  # board size
+            result = re.search(r"^(\d+)x(\d+)$", user_input[i])
             height = int(result.group(1))
             width = int(result.group(2))
         elif os.path.isfile(user_input[i]):  # filename scrabble
             filename = user_input[i]
-        elif re.match(intTest[1], user_input[i]):  # number of blocked squares
+        elif re.match(int_test[1], user_input[i]):  # number of blocked squares
             blocked_square_count = int(user_input[i])
-        elif re.match(intTest[2], user_input[i]):  # coordinate + word
-            is_vertical = ("V" == user_input[i][0]) | ("v" == user_input[i][0])
-            result = re.search("^(H|V)(\d+)x(\d+)(.+)$", user_input[i], re.IGNORECASE)
+        elif re.match(int_test[2], user_input[i]):  # coordinate + word
+            is_vertical = (user_input[i][0] == "V") or (
+                    user_input[i][0] == "v")
+            result = re.search(r"^(H|V)(\d+)x(\d+)(.+)$", user_input[i],
+                               re.IGNORECASE)
             start_index = [int(result.group(2)), int(result.group(3))]
             word = result.group(4)
             if is_vertical:
@@ -388,21 +563,21 @@ def main():
                     initial_values.append([board_pos, word[j]])
             else:
                 for j in range(len(word)):
-                    board_pos = (start_index[0]) * width + start_index[1] + j
+                    board_pos = (start_index[0] * width) + start_index[1] + j
                     initial_values.append([board_pos, word[j]])
-    print("size, block count [", height, "x", width, "] ", blocked_square_count)
     puzzle = Crossword(height, width)
-    puzzle.set_initial(initial_values, (blocked_square_count + (width + height + 2) * 2))
+    puzzle.set_initial(initial_values, blocked_square_count)
+    # ****************************************** MAIN: ABOVE = LAB 5, BELOW = LAB 6 ******************************************
     frequency, words_by_length, words = {}, {}, set()
     file = open(filename, 'r')
     for word in file:
         word = word.upper().strip()
         words.add(word)
-        for i in range(len(word)):
-            if word[i] in frequency:
-                frequency[word[i]] += 1
+        for v in word:
+            if v in frequency:
+                frequency[v] += 1
             else:
-                frequency[word[i]] = 1
+                frequency[v] = 1
         length = len(word)
         if length in words_by_length:
             words_by_length[length].append(word)
@@ -410,8 +585,10 @@ def main():
             words_by_length[length] = [word]
     for i in words_by_length:
         words_by_length[i] = sort_by_richness(words_by_length[i], frequency)
-    print_board(solve(xw, words_by_length, connected_words(xw), words), col_max + 4)
-    # return solve(xw, words_by_length, connected_words(xw), words)
+    ret = ac3solve(puzzle, words_by_length)
+    # ret = puzzle.solve(words_by_length, words)
+    # puzzle.board=list(ret)
+    print("In main, result:", ret)
 
 
 if __name__ == '__main__':
