@@ -284,13 +284,19 @@ class Crossword():
                 all_words.remove(word)
                 temp_q + arcs[word]
         print("prioritized work", len(prioritized_work))
+        dict_string = {}
+        for i in words_by_length_filtered.keys():
+            string_i = "@"
+            for j in words_by_length_filtered[i]:
+                string_i += j
+                string_i += "@"
+            dict_string[i] = string_i
         return self.back_solve(prioritized_work, finder, arcs, constraints,
-                               board, words_by_length, words_by_length_filtered, 0)
+                               board, words_by_length, words_by_length_filtered, dict_string, 0)
 
-    def back_solve(self, work, finder, arcs, constraints, board, words_by_length, words_by_length_filtered, recur_depth):
+    def back_solve(self, work, finder, arcs, constraints, board, words_by_length, words_by_length_filtered, dict_string, recur_depth):
         #print("in back_solve", recur_depth)
         print("in back_solve", recur_depth, "WORK", work)
-
         if len(work) == 0:
             return board
         current_space = copy.deepcopy(work.pop(0))
@@ -307,11 +313,11 @@ class Crossword():
                     alpha = 1
                 temp_board = self.add_word(temp_board, current_space)
                 #self.print_board(temp_board)
-                if self.regex_is_valid(temp_board, arcs, finder, temp_word, words_by_length, words_by_length_filtered):
+                if self.regex_is_valid(temp_board, arcs, finder, temp_word, words_by_length, words_by_length_filtered, dict_string):
                     #time.sleep(.2)
                     #print("recursive call before len", len(curr_domain))
                     #self.print_board(temp_board)
-                    ret = self.back_solve(copy.deepcopy(work), copy.deepcopy(finder), arcs, constraints, temp_board, words_by_length, words_by_length_filtered, recur_depth+1)
+                    ret = self.back_solve(copy.deepcopy(work), copy.deepcopy(finder), arcs, constraints, temp_board, words_by_length, words_by_length_filtered, dict_string, recur_depth+1)
                     #print("recursive call after len", len(curr_domain))
                     if ret is not None:
                         #print("===> returning from back_solve", recur_depth)
@@ -319,15 +325,20 @@ class Crossword():
         #print("===> returning from back_solve with no Solution", recur_depth)
         return None
 
-    def regex_is_valid(self, board, arcs, finder, temp_word, words_by_length, words_by_length_filtered):
+    def regex_is_valid(self, board, arcs, finder, temp_word, words_by_length, words_by_length_filtered, dict_string):
         for word in arcs.keys():
             current_word = finder[word]
-            rgx = self.get_word(board, current_word).replace("-", ".")
+            rgx = "@" + self.get_word(board, current_word).replace("-", ".") + "@"
             found_match = False
-            for guess in current_word["domain"]:
-                if re.match(rgx, guess[0]) or rgx in words_by_length_filtered[len(rgx)]:
-                    found_match = True
-                    break
+            #rgx="@IRE@"
+            #print("RE TEXT", rgx, dict_string)
+            if re.search(rgx, dict_string[len(rgx) - 2]):
+                #print("matched:", rgx)
+                found_match = True
+            #            for guess in current_word["domain"]:
+#                if re.match(rgx, guess[0]) or rgx in words_by_length_filtered[len(rgx)]:
+#                    found_match = True
+#                    break
             if not found_match:
                 return False
         return True
@@ -489,10 +500,13 @@ def main():
     # ret = puzzle.solve(words_by_length, words)
     # puzzle.board=list(ret)
     print("In main, result:")
+    puzzle.board = ret
     if ret is not None:
-        puzzle.print_board(ret)
+        puzzle.print_board(puzzle.board)
     else:
         print("No solution found.")
+    print(puzzle.board)
+
 
 
 if __name__ == '__main__':
