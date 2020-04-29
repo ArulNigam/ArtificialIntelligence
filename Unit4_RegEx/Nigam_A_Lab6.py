@@ -231,28 +231,6 @@ class Crossword():
         print("ARCS", arcs)
         return arcs, constraints
 
-    '''def solve(self, horiz, vert, board, words_by_length):
-        work = list()
-        finder = {}
-        for h_word in horiz:
-            length = len(horiz[h_word][0])
-            work.append({"name": h_word, "start": horiz[h_word][0][0], "end": horiz[h_word][0][-1], "word": "",
-                         "length": length, "domain": words_by_length[length]})
-            if h_word not in finder.keys():
-                finder[h_word] = {"start": horiz[h_word][0][0], "end": horiz[h_word][0][-1], "word": "-" * length, "length": length,
-                     "domain": words_by_length[length]}
-        for v_word in vert:
-            length = len(vert[v_word][0])
-            work.append(
-                {"name": v_word, "start": vert[v_word][0][0], "end": vert[v_word][0][-1], "word": "-" * length, "length": length,
-                 "domain": words_by_length[length]})
-            if v_word not in finder.keys():
-                finder[v_word] = {"start": vert[v_word][0][0], "end": vert[v_word][0][-1], "word": "-" * length, "length": length,
-                     "domain": words_by_length[length]}
-        arcs, constraints = self.find_arcs(horiz, vert)
-        print("ARCS=",arcs)
-        return self.back_solve(work, finder, arcs, constraints, board)'''
-
     def solve(self, horiz, vert, board, words_by_length):
         words_by_length_filtered = {}
         for j in words_by_length.keys():
@@ -305,58 +283,52 @@ class Crossword():
                 prioritized_work.append(finder[word])
                 all_words.remove(word)
                 temp_q + arcs[word]
+        print("prioritized work", len(prioritized_work))
         return self.back_solve(prioritized_work, finder, arcs, constraints,
-                               board, words_by_length, words_by_length_filtered)
+                               board, words_by_length, words_by_length_filtered, 0)
 
-    def back_solve(self, work, finder, arcs, constraints, board, words_by_length, words_by_length_filtered):
-        print(work)
-        # self.print_board(board)
-        # print(len(work))
-        print("WORK", work)
+    def back_solve(self, work, finder, arcs, constraints, board, words_by_length, words_by_length_filtered, recur_depth):
+        #print("in back_solve", recur_depth)
+        print("in back_solve", recur_depth, "WORK", work)
+
         if len(work) == 0:
             return board
-        current_space = work.pop(0)
-        #print("doing", current_space["name"])
+        current_space = copy.deepcopy(work.pop(0))
         current_space["word"] = self.get_word(board, current_space)
         rgx = current_space["word"].replace("-", ".")
         curr_domain = current_space["domain"]
-        #print("RGX: ", current_space["word"], rgx)
-        print("CURR DOMAIN", curr_domain)
         while len(curr_domain) != 0:
             temp_board = copy.deepcopy(board)
             temp_word = curr_domain.pop(0)[0]
+            #print("   trying:", temp_word)
             if re.match(rgx, temp_word):
                 current_space["word"] = temp_word
+                if temp_word=="STAB":
+                    alpha = 1
                 temp_board = self.add_word(temp_board, current_space)
-                self.print_board(temp_board)
+                #self.print_board(temp_board)
                 if self.regex_is_valid(temp_board, arcs, finder, temp_word, words_by_length, words_by_length_filtered):
-                    print("HIHIHIHIHIHIHHIHIHIHIHIHIHIHIHI")
-                    time.sleep(.2)
-                    ret = self.back_solve(work, finder, arcs, constraints, temp_board, words_by_length, words_by_length_filtered)
+                    #time.sleep(.2)
+                    #print("recursive call before len", len(curr_domain))
+                    #self.print_board(temp_board)
+                    ret = self.back_solve(copy.deepcopy(work), copy.deepcopy(finder), arcs, constraints, temp_board, words_by_length, words_by_length_filtered, recur_depth+1)
+                    #print("recursive call after len", len(curr_domain))
                     if ret is not None:
+                        #print("===> returning from back_solve", recur_depth)
                         return ret
+        #print("===> returning from back_solve with no Solution", recur_depth)
         return None
 
     def regex_is_valid(self, board, arcs, finder, temp_word, words_by_length, words_by_length_filtered):
         for word in arcs.keys():
             current_word = finder[word]
-            #print("curr word", current_word)
             rgx = self.get_word(board, current_word).replace("-", ".")
-            #print("rgx", rgx, "temp word", temp_word)
-            #if rgx in words_by_length[len(rgx)]:
-                #break
-            #self.print_board(board)
             found_match = False
             for guess in current_word["domain"]:
-                #print("guess", guess[0], "rgx", rgx)
-                #print(words)
                 if re.match(rgx, guess[0]) or rgx in words_by_length_filtered[len(rgx)]:
-                    #print("guessing", rgx, guess[0])#, re.match(rgx, guess[0]))  ####################################################
-                    # print("FOUND MATCH")
                     found_match = True
                     break
             if not found_match:
-                #print("failed", rgx)
                 return False
         return True
 
@@ -516,10 +488,11 @@ def main():
     ret = puzzle.solve(horiz, vert, xw, words_by_length)
     # ret = puzzle.solve(words_by_length, words)
     # puzzle.board=list(ret)
-
-    print(ret)
     print("In main, result:")
-    puzzle.print_board(ret)
+    if ret is not None:
+        puzzle.print_board(ret)
+    else:
+        print("No solution found.")
 
 
 if __name__ == '__main__':
