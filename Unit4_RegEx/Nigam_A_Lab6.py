@@ -388,12 +388,11 @@ def find_horizontal_words(puzzle, xw):
     return horizontal_words
 
 
-def find_vertical_words(puzzle, xw, transposed_table):
+def find_vertical_words(puzzle, xw, transp_table):
     vertical_words = {}
     word_count = 0
     newH = len(xw) // (puzzle.width + 2)
     xw = puzzle.transpose(xw, len(xw) // newH)
-    length = len(xw)
     while "-" in xw:
         start = xw.index("-")
         while xw[start - 1] != "#":
@@ -409,11 +408,10 @@ def find_vertical_words(puzzle, xw, transposed_table):
             temp += 1
             if xw[temp] == "-":
                 xw = xw[:temp] + "*" + xw[temp + 1:]
-        words_list = [i for i in range(transposed_table[start], transposed_table[temp] + 1, puzzle.width + 2)]
+        words_list = [i for i in range(transp_table[start], transp_table[temp] + 1, puzzle.width + 2)]
         vertical_words["v" + str(word_count)] = [words_list, len(words_list)]
         word_count += 1
-        xw = xw.replace("-", "*", temp + 1 - start)
-    print("vw", vertical_words)
+        # xw = xw.replace("-", "*", temp + 1 - start)
     return vertical_words
 
 
