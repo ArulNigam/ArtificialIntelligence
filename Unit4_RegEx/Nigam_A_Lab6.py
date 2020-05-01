@@ -57,8 +57,14 @@ class Crossword():
                 for i in range(len(areafilled)):
                     if areafilled[i] == OPENCHAR:
                         xw = xw[0:i] + BLOCKCHAR + xw[i + 1:]
-            if (re.search("[#](.?[~]|[~].?)[#]", xw) is None) and (
-                    re.search("[#](.?[~]|[~].?)[#]", self.transpose(xw, len(xw) // newH)) is None):
+            bool1 = re.search("[#](.?[~]|[~].?)[#]", xw) is None
+            print("xw")
+            self.print_board(xw)
+            transp_xw = self.transpose(xw, len(xw) // newH)
+            print("transp_xw")
+            self.print_board(transp_xw)
+            bool2 = re.search("[#](.?[~]|[~].?)[#]", transp_xw) is None
+            if bool1 and bool2:
                 if xw.count(BLOCKCHAR) <= blocked_goal:
                     ret = ""
                     if xw.count("#--#") == 0 and xw.count("#-#") == 0:
@@ -97,24 +103,11 @@ class Crossword():
         xw = ''.join(xw)
         xw = self.make_palindrome(xw)
         newH = len(xw) // (self.width + 2)
-        self.print_board(xw)
-        xw = re.sub("#--~--#", "#~~~--#", xw)
-        xw = re.sub("#-~---#", "#~~~--#", xw)
-        xw = re.sub("#~----#", "#~~~--#", xw)
-        xw = re.sub("#-~~--#", "#~~~--#", xw)
-        xw = re.sub("#~~---#", "#~~~--#", xw)
-        xw = re.sub("#~-~--#", "#~~~--#", xw)
-        xw = re.sub("#---~-#", "#--~~~#", xw)
-        xw = re.sub("#--~--#", "#--~~~#", xw)
-        xw = re.sub("#---~~#", "#--~~~#", xw)
-        xw = re.sub("#--~~-#", "#--~~~#", xw)
-        xw = re.sub("#--~-~#", "#--~~~#", xw)
-
-        xw = re.sub("#((--~--)|(-~~--)|(~-~--)|(-~---)|(~----))#", "#~~~--#", xw)
-        xw = re.sub("#((--~~-)|(--~-~)|(----~)|(---~-))#", "#--~~~#", xw)
+        xw = re.sub("#((~----)|(-~---)|(--~--)|(-~~--)|(~-~--)|(~~---))#", "#~~~AA#", xw)
+        xw = re.sub("#((---~-)|(----~)|(---~~)|(--~-~)|(--~~-))#", "#AA~~~#", xw)
         xw = re.sub("#((~--)|(-~-)|(--~)|(~~-)|(-~~)|(~-~))", "#~~~", xw)
         xw = re.sub("((~--)|(-~-)|(--~)|(~~-)|(-~~)|(~-~))#", "~~~#", xw)
-
+        xw = re.sub("A", "-", xw)
         xw = re.sub("#-(?=#)", "##", xw)
         xw = re.sub("#--(?=#)", "###", xw)
 
