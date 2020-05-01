@@ -309,11 +309,11 @@ class Crossword():
                 current_space["word"] = temp_word
                 current_space_word = current_space["name"]
                 temp_board = self.add_word(board, current_space)
-                new_score = self.score(temp_board,arcs,finder, words_by_length)
+                valid, new_score = self.regex_is_valid(temp_board, arcs, finder, temp_word, words_by_length, dict_string,current_space_word)
                 if new_score > self.max_score:
                     self.print_board_final(board)
                     self.max_score = new_score
-                if self.regex_is_valid(temp_board, arcs, finder, temp_word, words_by_length, dict_string,current_space_word):
+                if valid:
                     ret = self.back_solve(copy.deepcopy(work), finder, arcs, constraints, temp_board,
                                           words_by_length, dict_string, regex_by_length, recur_depth + 1)
                     if ret is not None:
@@ -322,14 +322,15 @@ class Crossword():
 
     def regex_is_valid(self, board, arcs, finder, temp_word, words_by_length, dict_string, word_try):
         used_words = []
+        score = 0
         for word in arcs.keys():
             current_word = finder[word]
             candidate_word = self.get_word(board, current_word)
             if "-" not in candidate_word:
                 if candidate_word in used_words:
-                    return False
+                    return False, score
                 used_words.append(candidate_word)
-
+                score += len(candidate_word)
         for word in arcs[word_try]:
             current_word = finder[word]
             candidate_word = self.get_word(board, current_word)
@@ -337,13 +338,13 @@ class Crossword():
             if "-" not in candidate_word:
                 used_words.append(candidate_word)
                 if candidate_word not in dict_string[len(candidate_word)]:
-                    return False
+                    return False, score
             else:
                 rgx = "@" + candidate_word.replace("-", ".")
                 if not re.search(rgx, dict_string[len(rgx) - 1]):
                     #print("returning false with candidate[",rgx,"] - [", candidate_word,"]")
-                    return False
-        return True
+                    return False, score
+        return True, score
 
     def get_word(self, board, current_space):
 
