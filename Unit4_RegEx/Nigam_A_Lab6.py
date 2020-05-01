@@ -15,11 +15,20 @@ class Crossword():
         self.width = width
         self.board = [OPENCHAR] * (self.height * self.width)
         self.length = len(self.board)
-        self.max_score = 0
+        self.max_score = 17 # more than a 4x4
+        self.trans_table = self.add_transposed_table(self.height+2, self.width+2)
+        self.rev_trans_table = self.add_transposed_table(self.width+2, self.height+2)
+
+    def add_transposed_table(self, height, width):
+        table = {}
+        for i in range((height)*(width)):
+            x = i // width
+            y = i % width
+            table[int(y * height) + x] = i
+        return table
 
     def addblock(self, xw, blocked_goal, level=0):
         print("xw=", xw, "blocked_goal=", blocked_goal, "level=", level)
-        time.sleep(.2)
         blocked_so_far = xw.count(BLOCKCHAR)
         if blocked_so_far >= blocked_goal:
             if self.is_valid(xw):
@@ -58,11 +67,7 @@ class Crossword():
                     if areafilled[i] == OPENCHAR:
                         xw = xw[0:i] + BLOCKCHAR + xw[i + 1:]
             bool1 = re.search("[#](.?[~]|[~].?)[#]", xw) is None
-            print("xw")
-            self.print_board(xw)
             transp_xw = self.transpose(xw, len(xw) // newH)
-            print("transp_xw")
-            self.print_board(transp_xw)
             bool2 = re.search("[#](.?[~]|[~].?)[#]", transp_xw) is None
             if bool1 and bool2:
                 if xw.count(BLOCKCHAR) <= blocked_goal:
@@ -116,8 +121,6 @@ class Crossword():
         xw = re.sub("#--(?=#)", "###", xw)
 
         xw = self.make_palindrome(xw)
-        print("protected f")
-        self.print_board(xw)
         return xw
 
     def area_fill(self, board, sp):
@@ -165,11 +168,6 @@ class Crossword():
             print(board[((self.width + additional_thickness) * i):((self.width + additional_thickness) * (i + 1))])
         print()
 
-    def print_board2(self, board, additional_thickness=2):
-        for i in range(self.width + additional_thickness):
-            print(board[((self.height + additional_thickness) * i):((self.height + additional_thickness) * (i + 1))])
-        print()
-
     def print_board_final(self, board):
         for i in range(1, self.height + 1):
             print(board[1 + ((self.width + 2) * i):((self.width + 2) * (i + 1)) - 1])
@@ -198,14 +196,19 @@ class Crossword():
         self.board = list(ret)
 
     def transpose(self, xw, width):
-        height = len(xw) // (width)
-        temp = [0] * len(xw)
         xw = list(xw)
-        for i in range(len(xw)):
-            x = i // (width)
-            y = i % (width)
-            temp[int((y * height) + x)] = xw[i]
-        return ''.join(temp)
+        if (width == self.width+2):
+            temp = [xw[self.trans_table[i]] for i in range(len(xw))]
+        elif (width == self.height+2):
+            table = self.rev_trans_table
+            temp = [xw[self.rev_trans_table[i]] for i in range(len(xw))]
+        else:
+            print("width error is transpose")
+            return None
+
+        temp = ''.join(temp)
+        return temp
+
 
     def find_arcs(self, horiz, vert):
         arcs, constraints = {}, {}
@@ -226,16 +229,6 @@ class Crossword():
                     constraints[v_word + h_word] = [vert[v_word][0].index(space), horiz[h_word][0].index(space)]
         print("ARCS", arcs)
         return arcs, constraints
-
-    def score(self, board, arcs, finder, dict_string):
-        score = 0
-        for word in arcs.keys():
-            current_word = finder[word]
-            candidate_word = self.get_word(board, current_word)
-            if "-" not in candidate_word:
-                if candidate_word in dict_string[len(candidate_word)]:
-                    score += len(candidate_word)
-        return score
 
     def solve(self, horiz, vert, board, words_by_length, regex_by_length):
         print(words_by_length)
@@ -273,10 +266,9 @@ class Crossword():
         only_do = "x"
         if h_lengths >= 49:
             only_do = "h"
-        elif v_lengths >= 49:
+        elif v_lengths >= 49 and v_lengths > h_lengths:
             only_do = "v"
-        if only_do == "h" and v_lengths > h_lengths:  # v > h >= 49
-            only_do = "v"
+
         for key in arcs:
             if len(arcs[key]) > biggest_dict_size:
                 biggest_dict_key = key
@@ -298,11 +290,12 @@ class Crossword():
             final_work = [task for task in prioritized_work if only_do in task["name"]]
         dict_string = {}
         for i in words_by_length.keys():
-            string_i = "@"
-            for j in words_by_length[i]:
-                string_i += j
-                string_i += "@"
-            dict_string[i] = string_i
+            dict_string[i] = "@"
+            dict_string[i] += "@".join(words_by_length[i])
+        if only_do != "x":
+            return self.fast_fill(final_work, finder, arcs, constraints,
+                               board, words_by_length, dict_string, regex_by_length, 0)
+
         return self.back_solve(final_work, finder, arcs, constraints,
                                board, words_by_length, dict_string, regex_by_length, 0)
 
@@ -350,16 +343,35 @@ class Crossword():
         for word in arcs[word_try]:
             current_word = finder[word]
             candidate_word = self.get_word(board, current_word)
-            # Reject duplicate words
             if "-" not in candidate_word:
                 if candidate_word not in dict_string[len(candidate_word)]:
-                    return False, score
+                    return False, score-len(candidate_word)
             else:
                 rgx = "@" + candidate_word.replace("-", ".")
                 if not re.search(rgx, dict_string[len(rgx) - 1]):
                     # print("returning false with candidate[",rgx,"] - [", candidate_word,"]")
-                    return False, score
+                    return False, score-len(candidate_word)
         return True, score
+
+    def fast_fill(self, work, finder, arcs, constraints, board, words_by_length, dict_string, regex_by_length,
+                   recur_depth):
+        words_used = set([])
+        while len(work) > 0:
+            current_space = work.pop(0)
+            current_space["word"] = self.get_word(board, current_space)
+            word_len = len(current_space["word"])
+            words_to_iterate = words_by_length[word_len]
+            rgx_word = current_space["word"].replace("-", ".")
+            rgx = re.compile(rgx_word)
+            for temp_word in words_to_iterate:
+                if rgx.match(temp_word):
+                    if temp_word not in words_used:
+                        current_space["word"] = temp_word
+                        current_space_word = current_space["name"]
+                        words_used.add(temp_word)
+                        board = self.add_word(board, current_space)
+                        break
+        return board
 
     def get_word(self, board, current_space):
 
@@ -378,24 +390,12 @@ class Crossword():
         if is_vertical:
             newH = len(board) // (self.width + 2)
             board = self.transpose(board, len(board) // newH)
-            start = self.reverse_transposed_table(board)[start]
-            end = self.reverse_transposed_table(board)[end]
+            start = self.rev_trans_table[start]
+            end = self.rev_trans_table[end]
         ret = board[:start] + word + board[start + len(word):]
         if is_vertical:
             ret = self.transpose(ret, newH)
         return ret
-
-    def reverse_transposed_table(puzzle, xw):
-        length = len(xw)
-        width = (puzzle.width + 2)
-        height = length // width
-        table = {}
-        for i in range(length):
-            x = i // width
-            y = i % width
-            table[i] = int(y * height) + x
-        return table
-
 
 def sort_by_richness(words, frequency):
     temp = []
@@ -449,19 +449,6 @@ def find_vertical_words(puzzle, xw, transp_table):
         word_count += 1
     return vertical_words
 
-
-def transposed_table(puzzle, xw):
-    length = len(xw)
-    width = (puzzle.width + 2)
-    height = length // width
-    table = {}
-    for i in range(length):
-        x = i // width
-        y = i % width
-        table[int(y * height) + x] = i
-    return table
-
-
 def main():
     int_test = [r"^(\d+)x(\d+)$", r"^\d+$", r"^(H|V|h|v)(\d+)x(\d+)(.+)$"]
     user_input = sys.argv
@@ -499,10 +486,16 @@ def main():
     # ****************************************** MAIN: ABOVE = LAB 5, BELOW = LAB 6 ******************************************
     words_by_length, words = {}, set()
     regex_by_length = {}
+    '''
+    with open(filename, 'r') as f:
+        words = [word.upper().strip().translate(str.maketrans('', '', string.punctuation)) for word in f]
+    '''
+
     file = open(filename, 'r')
     frequency = {}
     # frequency = {letter: 0 for letter in string.ascii_uppercase}
     # frequency.update({"0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0})
+
     for word in file:
         word = word.upper().strip().translate(str.maketrans('', '', string.punctuation))
         words.add(word)
@@ -522,7 +515,7 @@ def main():
     xw = ''.join(puzzle.board)
     xw = puzzle.add_border(xw)
     horiz = find_horizontal_words(puzzle, xw)
-    vert = find_vertical_words(puzzle, xw, transposed_table(puzzle, xw))
+    vert = find_vertical_words(puzzle, xw, puzzle.trans_table)
     puzzle.board = puzzle.solve(horiz, vert, xw, words_by_length, regex_by_length)
     print("In main, result:")
     if puzzle.board is not None:
