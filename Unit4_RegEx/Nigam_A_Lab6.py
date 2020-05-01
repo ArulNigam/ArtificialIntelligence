@@ -2,7 +2,7 @@
 # Period 3
 # Crossword Pt. 2
 
-import os, re, sys, time, random, copy, string
+import os, re, sys, time, random, copy, string, timeit, fnmatch
 
 BLOCKCHAR = '#'
 OPENCHAR = "-"
@@ -15,6 +15,7 @@ class Crossword():
         self.width = width
         self.board = [OPENCHAR] * (self.height * self.width)
         self.length = len(self.board)
+        self.max_score = 0
 
     def addblock(self, xw, blocked_goal, level=0):
         print("xw=", xw, "blocked_goal=", blocked_goal, "level=", level)
@@ -96,12 +97,26 @@ class Crossword():
         xw = ''.join(xw)
         xw = self.make_palindrome(xw)
         newH = len(xw) // (self.width + 2)
-        for counter in range(1):
-            xw = re.sub("#((~--)|(-~-)|(--~)|(~~-)|(-~~)|(~-~))", "#~~~", xw)
-            xw = re.sub("((~--)|(-~-)|(--~)|(~~-)|(-~~)|(~-~))#", "~~~#", xw)
+        self.print_board(xw)
+        xw = re.sub("#--~--#", "#~~~--#", xw)
+        xw = re.sub("#-~---#", "#~~~--#", xw)
+        xw = re.sub("#~----#", "#~~~--#", xw)
+        xw = re.sub("#-~~--#", "#~~~--#", xw)
+        xw = re.sub("#~~---#", "#~~~--#", xw)
+        xw = re.sub("#~-~--#", "#~~~--#", xw)
+        xw = re.sub("#---~-#", "#--~~~#", xw)
+        xw = re.sub("#--~--#", "#--~~~#", xw)
+        xw = re.sub("#---~~#", "#--~~~#", xw)
+        xw = re.sub("#--~~-#", "#--~~~#", xw)
+        xw = re.sub("#--~-~#", "#--~~~#", xw)
 
-            xw = re.sub("#-(?=#)", "##", xw)
-            xw = re.sub("#--(?=#)", "###", xw)
+        xw = re.sub("#((--~--)|(-~~--)|(~-~--)|(-~---)|(~----))#", "#~~~--#", xw)
+        xw = re.sub("#((--~~-)|(--~-~)|(----~)|(---~-))#", "#--~~~#", xw)
+        xw = re.sub("#((~--)|(-~-)|(--~)|(~~-)|(-~~)|(~-~))", "#~~~", xw)
+        xw = re.sub("((~--)|(-~-)|(--~)|(~~-)|(-~~)|(~-~))#", "~~~#", xw)
+
+        xw = re.sub("#-(?=#)", "##", xw)
+        xw = re.sub("#--(?=#)", "###", xw)
 
         xw = self.make_palindrome(xw)
         return xw
@@ -168,11 +183,8 @@ class Crossword():
             xw[i[0]] = i[1]
         xw = ''.join(xw)
         xw = self.add_border(xw)
-        ##self.print_board(xw)
         xw = self.add_protected(xw)
-        ##self.print_board(xw)
         xw = self.addblock(xw, blocked_goal + ((self.width + self.height + 2) * 2))
-        ##self.print_board(xw)
         xw = list(xw)
         for i in initial_values:
             xw[((i[0] // self.width) + 1) * (self.width + 2) + (1 + i[0] % self.width)] = i[1]
@@ -216,9 +228,18 @@ class Crossword():
         print("ARCS", arcs)
         return arcs, constraints
 
-    def solve(self, horiz, vert, board, words_by_length):
-        print(words_by_length)
+    def score(self, board, arcs, finder, dict_string):
+        score = 0
+        for word in arcs.keys():
+            current_word = finder[word]
+            candidate_word = self.get_word(board, current_word)
+            if "-" not in candidate_word:
+                if candidate_word in dict_string[len(candidate_word)]:
+                    score += len(candidate_word)
+        return score
 
+    def solve(self, horiz, vert, board, words_by_length, regex_by_length):
+        print(words_by_length)
         work = list()
         finder = {}
         all_words = []
@@ -270,47 +291,65 @@ class Crossword():
                 string_i += "@"
             dict_string[i] = string_i
         return self.back_solve(prioritized_work, finder, arcs, constraints,
-                               board, words_by_length, dict_string, 0)
+                               board, words_by_length, dict_string, regex_by_length, 0)
 
-    def back_solve(self, work, finder, arcs, constraints, board, words_by_length, dict_string,
+    def back_solve(self, work, finder, arcs, constraints, board, words_by_length, dict_string, regex_by_length,
                    recur_depth):
-        # print("in back_solve", recur_depth)
+        #print("in back_solve", recur_depth)
+##        if recur_depth == self.width:
+  ##          self.print_board_final(board)
         # print("in back_solve", recur_depth, "WORK", work)
         if len(work) == 0:
             return board
         # current_space = copy.deepcopy(work.pop(0))
         current_space = work.pop(0)
         current_space["word"] = self.get_word(board, current_space)
-        rgx = current_space["word"].replace("-", ".")
-        for temp_word in words_by_length[len(current_space["word"])]:
-            if re.match(rgx, temp_word):
+        rgx_word = current_space["word"].replace("-", ".")
+        rgx_letters = list(rgx_word.replace(".", ""))
+        word_len = len(current_space["word"])
+        words_to_iterate = words_by_length[word_len]
+        for letter in rgx_letters:
+            words_to_iterate = [x for x in words_to_iterate if letter in x]
+        rgx = re.compile(rgx_word)
+        for temp_word in words_to_iterate:
+            if rgx.match(temp_word):
                 current_space["word"] = temp_word
+                current_space_word = current_space["name"]
                 temp_board = self.add_word(board, current_space)
-                if self.regex_is_valid(temp_board, arcs, finder, temp_word, words_by_length, dict_string):
+                new_score = self.score(temp_board,arcs,finder, words_by_length)
+                if new_score > self.max_score:
+                    self.print_board_final(board)
+                    self.max_score = new_score
+                if self.regex_is_valid(temp_board, arcs, finder, temp_word, words_by_length, dict_string,current_space_word):
                     ret = self.back_solve(copy.deepcopy(work), finder, arcs, constraints, temp_board,
-                                          words_by_length, dict_string, recur_depth + 1)
+                                          words_by_length, dict_string, regex_by_length, recur_depth + 1)
                     if ret is not None:
                         return ret
         return None
 
-    def regex_is_valid(self, board, arcs, finder, temp_word, words_by_length, dict_string):
+    def regex_is_valid(self, board, arcs, finder, temp_word, words_by_length, dict_string, word_try):
         used_words = []
         for word in arcs.keys():
             current_word = finder[word]
             candidate_word = self.get_word(board, current_word)
-            # Reject duplicate words
-            if candidate_word.find("-") < 0:
+            if "-" not in candidate_word:
                 if candidate_word in used_words:
                     return False
                 used_words.append(candidate_word)
-            '''if candidate_word.find("ANTE") >=0:
-                print("===>",candidate_word)
-                print(current_word)'''
 
-            rgx = "@" + candidate_word.replace("-", ".") + "@"
-            if not re.search(rgx, dict_string[len(rgx) - 2]):
-                return False
-
+        for word in arcs[word_try]:
+            current_word = finder[word]
+            candidate_word = self.get_word(board, current_word)
+            # Reject duplicate words
+            if "-" not in candidate_word:
+                used_words.append(candidate_word)
+                if candidate_word not in dict_string[len(candidate_word)]:
+                    return False
+            else:
+                rgx = "@" + candidate_word.replace("-", ".")
+                if not re.search(rgx, dict_string[len(rgx) - 1]):
+                    #print("returning false with candidate[",rgx,"] - [", candidate_word,"]")
+                    return False
         return True
 
     def get_word(self, board, current_space):
@@ -332,9 +371,9 @@ class Crossword():
             board = self.transpose(board, len(board) // newH)
             start = self.reverse_transposed_table(board)[start]
             end = self.reverse_transposed_table(board)[end]
-        ret = board[:start] + word + board[end + 1:]
+        ret = board[:start] + word + board[start+len(word):]
         if is_vertical:
-            ret = self.transpose(ret, len(ret) // newH)
+            ret = self.transpose(ret, newH)
         return ret
 
     def reverse_transposed_table(puzzle, xw):
@@ -463,14 +502,19 @@ def main():
         puzzle.board[i] = puzzle.board[i].upper()
     # ****************************************** MAIN: ABOVE = LAB 5, BELOW = LAB 6 ******************************************
     words_by_length, words = {}, set()
+    regex_by_length = {}
     file = open(filename, 'r')
-    frequency = {letter: 0 for letter in string.ascii_uppercase}
-    frequency.update({0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0})
+    frequency = {}
+    #frequency = {letter: 0 for letter in string.ascii_uppercase}
+    #frequency.update({"0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0})
     for word in file:
         word = word.upper().strip().translate(str.maketrans('', '', string.punctuation))
         words.add(word)
         for v in word:
-            frequency[v] += 1
+            if v in frequency:
+                frequency[v] += 1
+            else:
+                frequency[v] = 1
         length = len(word)
         if length in words_by_length:
             words_by_length[length].append(word)
@@ -478,11 +522,12 @@ def main():
             words_by_length[length] = [word]
     for i in words_by_length:
         words_by_length[i] = sort_by_richness(words_by_length[i], frequency)
+        regex_by_length[i] = [re.compile(x) for x in words_by_length[i]]
     xw = ''.join(puzzle.board)
     xw = puzzle.add_border(xw)
     horiz = find_horizontal_words(puzzle, xw)
     vert = find_vertical_words(puzzle, xw, transposed_table(puzzle, xw))
-    puzzle.board = puzzle.solve(horiz, vert, xw, words_by_length)
+    puzzle.board = puzzle.solve(horiz, vert, xw, words_by_length, regex_by_length)
     print("In main, result:")
     if puzzle.board is not None:
         puzzle.print_board_final(puzzle.board)
