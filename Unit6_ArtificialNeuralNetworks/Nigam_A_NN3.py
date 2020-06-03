@@ -18,7 +18,7 @@ def create_data(inp):
         r = inp[9:]
     else:
         r = inp[8:]'''
-    for i in range(20480): # training data
+    for i in range(16384): # training data
         inp_copy = copy.deepcopy(inp)
         x = random.uniform(-1.50, 1.50)
         y = random.uniform(-1.50, 1.50)
@@ -166,7 +166,7 @@ def main():
     inputs, outputs = create_data(input_equation)
     # r = float(str(r))
     t_funct = 'T3'
-    node_count = [10, 1] # number of nodes in hidden layer
+    node_count = [8, 1] # number of nodes in hidden layer
     weights = []
     starting_error = math.inf
     while time.time() - start_time < 80:
@@ -214,7 +214,7 @@ def main():
     print("Layer counts ", [3, node_count[0], node_count[1], 1])
     for w in weights:
         print(w)
-    print("***********************DONE***********************", time.time() - start_time)
+    # print("***********************DONE***********************", time.time() - start_time)
     return weights
 
 
